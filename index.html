@@ -149,49 +149,59 @@
         }
 
         function onScanSuccess(decodedText) {
-            if (isScanning) return;
-            isScanning = true;
-            
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.pause(true);
-            }
+    if (isScanning) return;
+    isScanning = true;
+    
+    // حفظ الكود في متغير
+    const lastScannedCode = decodedText;
+    const scanTime = Date.now();
+    
+    if (html5QrcodeScanner) {
+        html5QrcodeScanner.pause(true);
+    }
+    
+    Swal.fire({ 
+        title: 'جاري التسجيل...', 
+        allowOutsideClick: false, 
+        didOpen: () => Swal.showLoading() 
+    });
+    
+    fetch(`${APP_SCRIPT_URL}?code=${encodeURIComponent(decodedText)}&t=${scanTime}`)
+        .then(response => response.text())
+        .then(data => {
+            Swal.close();
             
             Swal.fire({ 
-                title: 'جاري التسجيل...', 
-                allowOutsideClick: false, 
-                didOpen: () => Swal.showLoading() 
+                icon: data.includes('✅') ? 'success' : 'error', 
+                text: data,
+                timer: 3000,
+                showConfirmButton: false
             });
             
-            // إرسال الكود مباشرة لـ Google Apps Script
-            fetch(`${APP_SCRIPT_URL}?code=${encodeURIComponent(decodedText)}`)
-                .then(response => response.text())
-                .then(data => {
-                    Swal.close();
-                    Swal.fire({ 
-                        icon: data.includes('✅') ? 'success' : 'error', 
-                        text: data,
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                    
-                    setTimeout(() => {
-                        if (html5QrcodeScanner) {
-                            html5QrcodeScanner.resume();
-                        }
-                        isScanning = false;
-                    }, 3000);
-                })
-                .catch(err => {
-                    Swal.close();
-                    Swal.fire({ icon: 'error', text: 'خطأ في الاتصال بالسيرفر' });
-                    setTimeout(() => {
-                        if (html5QrcodeScanner) {
-                            html5QrcodeScanner.resume();
-                        }
-                        isScanning = false;
-                    }, 2000);
-                });
-        }
+            // تعطيل المسح لمدة 5 ثواني بعد كل قراءة
+            setTimeout(() => {
+                if (html5QrcodeScanner) {
+                    html5QrcodeScanner.resume();
+                }
+                isScanning = false;
+            }, 5000);
+        })
+        .catch(err => {
+            Swal.close();
+            Swal.fire({ 
+                icon: 'error', 
+                text: 'خطأ في الاتصال',
+                timer: 2000
+            });
+            
+            setTimeout(() => {
+                if (html5QrcodeScanner) {
+                    html5QrcodeScanner.resume();
+                }
+                isScanning = false;
+            }, 2000);
+        });
+}
 
         function onScanError(error) {
             console.log('Scan error:', error);
