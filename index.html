@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام الحضور الذكي</title>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            text-align: center;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 15px;
+        }
+        .logo-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .logo { height: 50px; }
+        h2 { color: #004e92; margin: 20px 0; }
+        #camera-btn {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 18px 35px;
+            font-size: 20px;
+            font-weight: bold;
+            margin: 20px auto;
+            cursor: pointer;
+            display: block;
+        }
+        #reader {
+            width: 100%;
+            max-width: 500px;
+            margin: 20px auto;
+            border-radius: 15px;
+            overflow: hidden;
+            display: none;
+            background: #000;
+        }
+        #result {
+            background: white;
+            border: 3px solid #004e92;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 500px;
+            min-height: 80px;
+            font-size: 18px;
+        }
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            max-width: 500px;
+            margin: 20px auto;
+        }
+        .dash-btn {
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            background: #004e92;
+        }
+        .btn-green { background: #27ae60; }
+        .btn-orange { background: #f39c12; }
+        .btn-gray { background: #34495e; }
+    </style>
+</head>
+<body>
+    <div class="logo-container">
+        <img src="https://i.ibb.co/Cp0BsgGf/Ro-B.png" class="logo" alt="Logo">
+        <span>نظام الحضور الذكي</span>
+        <img src="https://i.ibb.co/xyYxNB5/RE-B.png" class="logo" alt="Logo">
+    </div>
+
+    <h2>📸 مسح كود المتطوع</h2>
+
+    <button id="camera-btn" onclick="startCamera()">▶️ تشغيل الكاميرا الآن 📷</button>
+
+    <div id="reader"></div>
+    <div id="result">بانتظار تشغيل الكاميرا...</div>
+
+    <div class="dashboard">
+        <button class="dash-btn" onclick="window.location.href='?page=events'">📅 الفعاليات</button>
+        <button class="dash-btn btn-green" onclick="window.location.href='?page=reports'">📊 التقارير</button>
+        <button class="dash-btn btn-orange" onclick="window.location.href='?page=volunteers'">👥 المتطوعين</button>
+        <button class="dash-btn btn-gray" onclick="window.location.href='?page=edit'">⚙️ الإعدادات</button>
+    </div>
+
+    <script>
+        // 👈 هنا هتحط رابط Google Apps Script بتاعك بعد ما تنشره
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzRqCU1jtP470wupNnQCqXbzaDyUEqZtYALwhRRw5I7Yx-mALWEF605RcBbphvuosjFOw/exec'; // غير ده
+
+        let html5QrcodeScanner = null;
+
+        async function startCamera() {
+            const btn = document.getElementById('camera-btn');
+            const reader = document.getElementById('reader');
+            const result = document.getElementById('result');
+            
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            result.innerHTML = '⏳ جاري تشغيل الكاميرا...';
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                stream.getTracks().forEach(track => track.stop());
+                
+                btn.style.display = 'none';
+                reader.style.display = 'block';
+                
+                html5QrcodeScanner = new Html5QrcodeScanner('reader', {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    rememberLastUsedCamera: true,
+                });
+                
+                html5QrcodeScanner.render(onScanSuccess, onScanError);
+                result.innerHTML = '📷 الكاميرا جاهزة، وجهها نحو QR';
+                
+            } catch (err) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: 'فشل تشغيل الكاميرا',
+                    text: err.message,
+                });
+                
+                result.innerHTML = '❌ فشل التشغيل';
+            }
+        }
+
+        function onScanSuccess(decodedText) {
+            Swal.fire({ title: 'جاري التسجيل...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            fetch(`${SCRIPT_URL}?code=${encodeURIComponent(decodedText)}`)
+                .then(response => response.text())
+                .then(data => {
+                    Swal.close();
+                    Swal.fire({ icon: data.includes('✅') ? 'success' : 'error', text: data });
+                })
+                .catch(err => {
+                    Swal.close();
+                    Swal.fire({ icon: 'error', text: err.message });
+                });
+        }
+
+        function onScanError(error) {
+            console.log('Scan error:', error);
+        }
+    </script>
+</body>
+</html>
