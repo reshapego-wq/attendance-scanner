@@ -99,13 +99,36 @@
 
     <script>
         // 👈 حط رابط Google Apps Script بتاعك هنا
-        const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwufiWKPFOcopHob-YqrI9pu-1ErLNX177TcRJZH5yLq3kK_WNxdY7nSCkUVC_AT8iYuA/exec'; // غير ده برابطك
+        const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyt6h7cRwV-8Zz-q9t7sxre57BXTXDdNlNUsR5ZTZLrwG85LH2lZuunMJq5mfFoPOOH/exec'; // غير ده برابطك
         
         let html5QrcodeScanner = null;
         let isScanning = false;
 
         function goToPage(page) {
-            window.open(APP_SCRIPT_URL + '?page=' + page, '_blank');
+            let fileName = '';
+            
+            // تحويل اسم الصفحة لاسم الملف الصحيح
+            switch(page) {
+                case 'events':
+                    fileName = 'EventsForm';
+                    break;
+                case 'reports':
+                    fileName = 'Reports';
+                    break;
+                case 'volunteers':
+                    fileName = 'VolunteersManager';
+                    break;
+                case 'edit':
+                    fileName = 'EditRank';
+                    break;
+                case 'correction':
+                    fileName = 'Correction';
+                    break;
+                default:
+                    fileName = 'Index';
+            }
+            
+            window.open(APP_SCRIPT_URL + '?page=' + fileName, '_blank');
         }
 
         async function startCamera() {
