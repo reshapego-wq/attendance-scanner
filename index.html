@@ -91,10 +91,10 @@
     <div id="result">بانتظار تشغيل الكاميرا...</div>
 
     <div class="dashboard">
-        <button class="dash-btn" onclick="goToPage('events')">📅 الفعاليات</button>
-        <button class="dash-btn btn-green" onclick="goToPage('reports')">📊 التقارير</button>
-        <button class="dash-btn btn-orange" onclick="goToPage('volunteers')">👥 المتطوعين</button>
-        <button class="dash-btn btn-gray" onclick="goToPage('edit')">⚙️ الإعدادات</button>
+        <button class="dash-btn" onclick="goToPage('EventsForm')">📅 الفعاليات</button>
+        <button class="dash-btn btn-green" onclick="goToPage('Reports')">📊 التقارير</button>
+        <button class="dash-btn btn-orange" onclick="goToPage('VolunteersManager')">👥 المتطوعين</button>
+        <button class="dash-btn btn-gray" onclick="goToPage('EditRank')">⚙️ الإعدادات</button>
     </div>
 
     <script>
@@ -104,31 +104,9 @@
         let html5QrcodeScanner = null;
         let isScanning = false;
 
-        function goToPage(page) {
-            let fileName = '';
-            
-            // تحويل اسم الصفحة لاسم الملف الصحيح
-            switch(page) {
-                case 'events':
-                    fileName = 'EventsForm';
-                    break;
-                case 'reports':
-                    fileName = 'Reports';
-                    break;
-                case 'volunteers':
-                    fileName = 'VolunteersManager';
-                    break;
-                case 'edit':
-                    fileName = 'EditRank';
-                    break;
-                case 'correction':
-                    fileName = 'Correction';
-                    break;
-                default:
-                    fileName = 'Index';
-            }
-            
-            window.open(APP_SCRIPT_URL + '?page=' + fileName, '_blank');
+        function goToPage(pageName) {
+            // فتح الصفحة مباشرة من Google Apps Script
+            window.open(APP_SCRIPT_URL + '?page=' + pageName, '_blank');
         }
 
         async function startCamera() {
@@ -184,6 +162,7 @@
                 didOpen: () => Swal.showLoading() 
             });
             
+            // إرسال الكود مباشرة لـ Google Apps Script
             fetch(`${APP_SCRIPT_URL}?code=${encodeURIComponent(decodedText)}`)
                 .then(response => response.text())
                 .then(data => {
