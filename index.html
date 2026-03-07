@@ -91,17 +91,22 @@
     <div id="result">بانتظار تشغيل الكاميرا...</div>
 
     <div class="dashboard">
-        <button class="dash-btn" onclick="window.location.href='?page=events'">📅 الفعاليات</button>
-        <button class="dash-btn btn-green" onclick="window.location.href='?page=reports'">📊 التقارير</button>
-        <button class="dash-btn btn-orange" onclick="window.location.href='?page=volunteers'">👥 المتطوعين</button>
-        <button class="dash-btn btn-gray" onclick="window.location.href='?page=edit'">⚙️ الإعدادات</button>
+        <button class="dash-btn" onclick="goToPage('events')">📅 الفعاليات</button>
+        <button class="dash-btn btn-green" onclick="goToPage('reports')">📊 التقارير</button>
+        <button class="dash-btn btn-orange" onclick="goToPage('volunteers')">👥 المتطوعين</button>
+        <button class="dash-btn btn-gray" onclick="goToPage('edit')">⚙️ الإعدادات</button>
     </div>
 
     <script>
-        // 👈 هنا هتحط رابط Google Apps Script بتاعك بعد ما تنشره
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzRqCU1jtP470wupNnQCqXbzaDyUEqZtYALwhRRw5I7Yx-mALWEF605RcBbphvuosjFOw/exec'; // غير ده
-
+        // 👈 حط رابط Google Apps Script بتاعك هنا
+        const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfy.../exec'; // غير ده برابطك
+        
         let html5QrcodeScanner = null;
+        let isScanning = false;
+
+        function goToPage(page) {
+            window.open(APP_SCRIPT_URL + '?page=' + page, '_blank');
+        }
 
         async function startCamera() {
             const btn = document.getElementById('camera-btn');
@@ -143,17 +148,46 @@
         }
 
         function onScanSuccess(decodedText) {
-            Swal.fire({ title: 'جاري التسجيل...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            if (isScanning) return;
+            isScanning = true;
             
-            fetch(`${SCRIPT_URL}?code=${encodeURIComponent(decodedText)}`)
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.pause(true);
+            }
+            
+            Swal.fire({ 
+                title: 'جاري التسجيل...', 
+                allowOutsideClick: false, 
+                didOpen: () => Swal.showLoading() 
+            });
+            
+            fetch(`${APP_SCRIPT_URL}?code=${encodeURIComponent(decodedText)}`)
                 .then(response => response.text())
                 .then(data => {
                     Swal.close();
-                    Swal.fire({ icon: data.includes('✅') ? 'success' : 'error', text: data });
+                    Swal.fire({ 
+                        icon: data.includes('✅') ? 'success' : 'error', 
+                        text: data,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    
+                    setTimeout(() => {
+                        if (html5QrcodeScanner) {
+                            html5QrcodeScanner.resume();
+                        }
+                        isScanning = false;
+                    }, 3000);
                 })
                 .catch(err => {
                     Swal.close();
-                    Swal.fire({ icon: 'error', text: err.message });
+                    Swal.fire({ icon: 'error', text: 'خطأ في الاتصال بالسيرفر' });
+                    setTimeout(() => {
+                        if (html5QrcodeScanner) {
+                            html5QrcodeScanner.resume();
+                        }
+                        isScanning = false;
+                    }, 2000);
                 });
         }
 
