@@ -78,8 +78,8 @@
   <div class="brand">
     <div class="logos">
       <!-- ⬇️ غيّر اللينكين دول بلوجوهاتك -->
-      <img src="https://i.ibb.co/Cp0BsgGf/Ro-B.png" alt="">
-      <img src="https://i.ibb.co/xyYxNB5/RE-B.png" alt="">
+      <img id="logoL" src="" alt="">
+      <img id="logoR" src="" alt="">
     </div>
     <h1>التسجيل كمتطوع</h1>
     <p>املأ بياناتك وهتستلم كودك فوراً</p>
@@ -375,6 +375,16 @@ $('btnAgain').onclick = () => {
   $('fNid').dispatchEvent(new Event('input'));
   window.scrollTo({top:0, behavior:'smooth'});
 };
+
+  fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+  body:JSON.stringify({action:'branding'})}).then(r=>r.json()).then(b=>{
+  if(!b.ok) return;
+  const L=$('logoL'), R=$('logoR');
+  b.data.left ? L.src=b.data.left : L.remove();
+  b.data.right ? R.src=b.data.right : R.remove();
+  $('orgT').textContent = b.data.title||'';
+    if(b.data.title) document.querySelector('.brand h1').textContent = b.data.title;
+}).catch(()=>{});
 </script>
 </body>
 </html>
