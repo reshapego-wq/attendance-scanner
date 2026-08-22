@@ -15,4 +15,4 @@
  * ============================================================
  */
 
-const APP_API_URL = 'https://script.google.com/macros/s/AKfycbxASGDOzB6zEv5O-SRosE_7rHC0BfKfI_WusrMivt6W8bX2t3bDFDxzVWkRWx__DBw5/exec';
+const APP_API_URL = 'https://script.google.com/macros/s/AKfycbzxf4UYesBcudsYWAYrKQdD6O02c6ZEbXhjzrDcrgrmjH90WC5FIxu_K7OhK3Dmf5D8/exec';
