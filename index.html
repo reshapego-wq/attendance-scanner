@@ -21,16 +21,16 @@
   h1{font-size:19px;color:var(--primary);margin-bottom:4px}
   .sub{font-size:13px;color:#7a8590}
   label{display:block;font-size:13px;font-weight:600;margin:12px 0 6px;color:var(--dark)}
-  input,select{width:100%;padding:13px;border:2px solid var(--line);border-radius:10px;
-               font-size:16px;font-family:inherit;outline:none;background:#fff}
-  input:focus,select:focus{border-color:var(--primary)}
+  input{width:100%;padding:13px;border:2px solid var(--line);border-radius:10px;
+        font-size:16px;font-family:inherit;outline:none;background:#fff}
+  input:focus{border-color:var(--primary)}
   .btn{width:100%;padding:14px;border:none;border-radius:10px;font-size:16px;
        font-weight:700;color:#fff;cursor:pointer;font-family:inherit;margin-top:12px}
-  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn:disabled{opacity:.45}
   .btn-p{background:var(--primary)} .btn-g{background:var(--green)}
   .btn-r{background:var(--red)}
   .btn-ghost{background:#fff;color:var(--dark);border:2px solid var(--line)}
-  .row{display:flex;gap:10px}.row>*{flex:1;margin-top:12px}
+  .row{display:flex;gap:10px}.row>*{flex:1}
   .top{display:flex;justify-content:space-between;align-items:center;
        background:#fff;border-radius:14px;padding:12px 16px;margin-bottom:14px;
        box-shadow:0 2px 10px rgba(0,0,0,.06)}
@@ -67,9 +67,41 @@
   .confirm{border:2px solid var(--primary);background:#f2f7fd;border-radius:12px;
            padding:14px;margin-top:12px;display:none}
   .confirm b{display:block;font-size:16px;color:var(--dark);margin-bottom:2px}
+
+  /* ===== تنبيهات ويب (بدل رسايل المتصفح) ===== */
+  #toasts{position:fixed;top:12px;left:50%;transform:translateX(-50%);
+          width:calc(100% - 28px);max-width:460px;z-index:9000;
+          display:flex;flex-direction:column;gap:8px;pointer-events:none}
+  .toast{background:#fff;border-radius:12px;padding:13px 16px;font-size:14px;
+         font-weight:600;line-height:1.5;box-shadow:0 6px 22px rgba(0,0,0,.16);
+         border-right:6px solid var(--primary);animation:drop .22s ease-out;
+         white-space:pre-line}
+  .toast.t-ok{border-right-color:var(--green);color:#1b6b3f;background:#f2fcf6}
+  .toast.t-bad{border-right-color:var(--red);color:#96271c;background:#fef5f4}
+  .toast.t-warn{border-right-color:var(--amber);color:#8a5a06;background:#fffaf0}
+  @keyframes drop{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+
+  #modal{position:fixed;inset:0;background:rgba(20,28,38,.55);z-index:9500;
+         display:none;align-items:center;justify-content:center;padding:20px}
+  #modal.on{display:flex}
+  .mbox{background:#fff;border-radius:16px;padding:22px;width:100%;max-width:380px;
+        text-align:center;animation:drop .2s ease-out}
+  .mbox h2{font-size:18px;color:var(--dark);margin-bottom:8px}
+  .mbox p{font-size:14px;color:#6b7683;line-height:1.7;margin-bottom:6px}
 </style>
 </head>
 <body>
+
+<div id="toasts"></div>
+
+<div id="modal"><div class="mbox">
+  <h2 id="mTitle"></h2><p id="mText"></p>
+  <div class="row">
+    <button class="btn btn-r" id="mYes">تأكيد</button>
+    <button class="btn btn-ghost" id="mNo">إلغاء</button>
+  </div>
+</div></div>
+
 <div class="app">
 
   <!-- ============ الدخول ============ -->
@@ -113,8 +145,8 @@
       <h1>تسجيل يدوي</h1>
       <p class="sub">لو الكود مش راضي يتقري</p>
 
-      <label>ابحث بالاسم أو الكود</label>
-      <input id="inSearch" autocomplete="off" placeholder="اكتب حرف واحد على الأقل...">
+      <label>ابحث بالاسم أو الكود أو الموبايل</label>
+      <input id="inSearch" autocomplete="off" placeholder="اكتب حرف أو رقم...">
       <div class="list" id="searchList"></div>
 
       <div class="confirm" id="manConfirm">
@@ -127,7 +159,6 @@
       </div>
 
       <div id="manRes" class="result"></div>
-      <p class="hint">لو الاسم مش ظاهر، اكتب الكود بالظبط زي ما هو في الشيت.</p>
     </div>
   </div>
 
@@ -143,7 +174,34 @@ const $ = id => document.getElementById(id);
 let state = { token:null, me:null, events:[], vols:[], settings:null, drift:0,
               activeEvent:null, qr:null, busy:false, picked:null };
 
-/* ---------- الاتصال بالوسيط ---------- */
+/* ================= تنبيهات ويب ================= */
+function toast(kind, msg, ms){
+  const el = document.createElement('div');
+  el.className = 'toast t-' + kind;
+  el.textContent = msg;
+  $('toasts').appendChild(el);
+  setTimeout(() => {
+    el.style.transition = 'opacity .3s';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 320);
+  }, ms || (kind === 'bad' ? 5000 : 3400));
+}
+
+let modalYes = null;
+function ask(title, text, onYes){
+  $('mTitle').textContent = title;
+  $('mText').textContent = text;
+  modalYes = onYes;
+  $('modal').classList.add('on');
+}
+$('mNo').onclick = () => { $('modal').classList.remove('on'); modalYes = null; };
+$('mYes').onclick = () => {
+  $('modal').classList.remove('on');
+  const f = modalYes; modalYes = null;
+  if(f) f();
+};
+
+/* ================= الاتصال ================= */
 async function call(payload){
   const res = await fetch(API, {
     method:'POST',
@@ -154,50 +212,69 @@ async function call(payload){
 }
 const now = () => Date.now() + state.drift;
 
-/* ---------- الدخول ---------- */
+/* توحيد النص: أرقام عربية/فارسية → إنجليزية، وتجاهل المسافات والشرطات */
+const AR = '٠١٢٣٤٥٦٧٨٩', FA = '۰۱۲۳۴۵۶۷۸۹';
+function norm(s){
+  let out = '';
+  for(const ch of String(s == null ? '' : s)){
+    let i = AR.indexOf(ch);
+    if(i < 0) i = FA.indexOf(ch);
+    out += (i >= 0) ? String(i) : ch;
+  }
+  return out.toLowerCase().replace(/[\s\-_.]/g, '');
+}
+
+/* ================= الدخول ================= */
 $('btnLogin').onclick = async () => {
-  const name = $('inName').value.trim(), pin = $('inPin').value.trim();
-  if(!name || !/^\d{4}$/.test(pin)) return showLoginErr('اكتب اسمك وكود من ٤ أرقام');
+  const name = $('inName').value.trim();
+  const pin  = norm($('inPin').value);
+  if(!name || !/^\d{4}$/.test(pin)) return loginErr('اكتب اسمك وكود من ٤ أرقام');
 
   $('btnLogin').disabled = true; $('btnLogin').textContent = 'جاري الدخول...';
   try{
     const r = await call({action:'login', name, pin});
-    if(!r.ok) return showLoginErr(r.error);
+    if(!r.ok) return loginErr(r.error);
     localStorage.setItem(K.tok, r.data.token);
     localStorage.setItem(K.name, r.data.name);
     localStorage.setItem(K.perms, JSON.stringify(r.data.perms));
     state.token = r.data.token;
     await boot();
-  }catch(e){ showLoginErr('مفيش اتصال بالنت'); }
+    toast('ok', 'أهلاً ' + r.data.name);
+  }catch(e){ loginErr('مفيش اتصال بالنت'); }
   finally{ $('btnLogin').disabled = false; $('btnLogin').textContent = 'دخول'; }
 };
-$('inPin').addEventListener('keydown', e => { if(e.key==='Enter') $('btnLogin').click(); });
+$('inPin').addEventListener('keydown', e => { if(e.key === 'Enter') $('btnLogin').click(); });
 
-function showLoginErr(m){
+function loginErr(m){
   $('loginMsg').textContent = m;
   $('loginMsg').style.display = 'block';
+  toast('bad', m);
 }
 
-$('btnOut').onclick = () => {
+$('btnOut').onclick = () => ask('تسجيل خروج', 'هتحتاج تدخل الكود السري تاني.', () => {
   stopCam();
-  [K.tok,K.name,K.perms].forEach(k => localStorage.removeItem(k));
+  [K.tok, K.name, K.perms].forEach(k => localStorage.removeItem(k));
   location.reload();
-};
+});
 
-/* ---------- تحميل البيانات ---------- */
+/* ================= التحميل ================= */
 async function boot(){
   const r = await call({action:'bootstrap', token: state.token});
   if(!r.ok){
     localStorage.removeItem(K.tok);
     $('loginView').classList.remove('hide');
     $('mainView').classList.add('hide');
-    return showLoginErr(r.error);
+    return loginErr(r.error);
   }
   state.me = r.data.me;
   state.events = r.data.events;
   state.vols = r.data.volunteers;
   state.settings = r.data.settings;
   state.drift = r.data.serverTime - Date.now();
+
+  state.vols.forEach(v => {
+    v._n = norm(v.name); v._c = norm(v.code); v._p = norm(v.phone);
+  });
 
   $('loginView').classList.add('hide');
   $('mainView').classList.remove('hide');
@@ -208,7 +285,7 @@ async function boot(){
   renderQueue();
 }
 
-/* ---------- الفعاليات ---------- */
+/* ================= الفعاليات ================= */
 function renderEvents(){
   const t = now();
   const live = state.events.filter(e => t >= e.opensAt && t <= e.endsAt);
@@ -220,17 +297,15 @@ function renderEvents(){
     box.innerHTML = next
       ? `<div class="ev"><div class="ev-n">${esc(next.name)}</div>
          <div class="ev-m">${next.dateStr} — الكاميرا هتفتح قبلها بـ ${state.settings.cameraBefore} دقيقة</div></div>`
-      : `<p class="sub">مفيش أي فعالية قادمة. ضيف فعالية من شيت Events_Settings.</p>`;
+      : `<p class="sub">مفيش أي فعالية قادمة. ضيف فعالية في شيت Events_Settings.</p>`;
     state.activeEvent = null;
-    $('btnCam').disabled = true;
     $('camHint').textContent = 'الكاميرا بتفتح بس وقت الفعالية';
     return;
   }
 
   box.innerHTML = live.map((e,i) => {
-    const started = t >= e.startsAt;
-    const mins = Math.round((t - e.startsAt)/60000);
-    const note = started ? `بدأت من ${mins} دقيقة` : `تبدأ بعد ${Math.abs(mins)} دقيقة`;
+    const mins = Math.round((t - e.startsAt) / 60000);
+    const note = mins >= 0 ? `بدأت من ${mins} دقيقة` : `تبدأ بعد ${-mins} دقيقة`;
     return `<div class="ev live" data-i="${i}">
       <div class="ev-n">${esc(e.name)} <span class="pill">مفتوحة</span></div>
       <div class="ev-m">${esc(e.type)} · ${e.dateStr} · اليوم ${e.day} · ${note}</div></div>`;
@@ -245,38 +320,62 @@ function renderEvents(){
         state.activeEvent = live[+el.dataset.i];
         box.querySelectorAll('.ev').forEach(x => x.style.borderColor = 'var(--line)');
         el.style.borderColor = 'var(--green)';
-        $('camHint').textContent = 'الفعالية المختارة: ' + state.activeEvent.name;
+        toast('ok', 'الفعالية المختارة: ' + state.activeEvent.name);
       };
     });
     $('camHint').textContent = 'فيه أكتر من فعالية — اضغط على اللي عايزها';
   } else {
     $('camHint').textContent = '';
   }
-  $('btnCam').disabled = false;
 }
 setInterval(() => { if(state.me) renderEvents(); }, 60000);
 
-/* ---------- الكاميرا ---------- */
+/* ================= الكاميرا ================= */
 $('btnCam').onclick = startCam;
 $('btnStop').onclick = stopCam;
 
 async function startCam(){
-  if(!state.activeEvent) return;
+  if(!state.activeEvent){
+    const next = state.events.filter(e => e.opensAt > now())
+                             .sort((a,b) => a.opensAt - b.opensAt)[0];
+    return toast('warn', next
+      ? 'مفيش فعالية مفتوحة دلوقتي.\nالجاية: ' + next.name + ' يوم ' + next.dateStr
+      : 'مفيش فعالية مفتوحة دلوقتي.\nضيف فعالية في شيت Events_Settings.');
+  }
+  if(typeof Html5Qrcode === 'undefined')
+    return toast('bad', 'مكتبة الكاميرا مش اتحمّلت. اعمل Refresh للصفحة.');
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)
+    return toast('bad', 'المتصفح ده مش بيدعم الكاميرا. لازم الصفحة تكون على https.');
+
   $('btnCam').classList.add('hide');
   $('btnStop').classList.remove('hide');
+  say('scanRes', 'wait', 'جاري تشغيل الكاميرا...');
+
   try{
     state.qr = new Html5Qrcode('reader');
     await state.qr.start({facingMode:'environment'},
-      {fps:10, qrbox:{width:250,height:250}}, onScan, ()=>{});
-    say('scanRes','wait','وجّه الكاميرا ناحية الكود');
+      {fps:10, qrbox:{width:250, height:250}}, onScan, () => {});
+    say('scanRes', 'wait', 'وجّه الكاميرا ناحية الكود');
   }catch(err){
     stopCam();
-    say('scanRes','bad','مقدرتش أفتح الكاميرا. اسمح للموقع باستخدام الكاميرا وجرّب تاني.');
+    const m = String(err && (err.message || err.name || err));
+    let why = 'مقدرتش أفتح الكاميرا.\n' + m;
+    if(/NotAllowed|Permission/i.test(m))
+      why = 'الكاميرا مرفوضة.\nافتح إعدادات الموقع في المتصفح واسمح بالكاميرا، وبعدين اعمل Refresh.';
+    else if(/NotFound|Requested device/i.test(m))
+      why = 'مفيش كاميرا على الجهاز ده.';
+    else if(/NotReadable|in use/i.test(m))
+      why = 'الكاميرا مشغولة في تطبيق تاني. اقفله وجرّب تاني.';
+    say('scanRes', 'bad', why);
+    toast('bad', why);
   }
 }
 
 function stopCam(){
-  if(state.qr){ state.qr.stop().catch(()=>{}); state.qr.clear&&state.qr.clear(); state.qr=null; }
+  if(state.qr){
+    try{ state.qr.stop().then(() => state.qr && state.qr.clear()).catch(() => {}); }catch(e){}
+    state.qr = null;
+  }
   $('reader').innerHTML = '';
   $('btnCam').classList.remove('hide');
   $('btnStop').classList.add('hide');
@@ -285,14 +384,14 @@ function stopCam(){
 async function onScan(text){
   if(state.busy) return;
   state.busy = true;
-  await record(text.trim(), false, 'scanRes');
+  await record(String(text).trim(), false, 'scanRes');
   setTimeout(() => { state.busy = false; }, 2500);
 }
 
-/* ---------- التسجيل ---------- */
+/* ================= التسجيل ================= */
 async function record(code, manual, target){
   if(!code) return;
-  say(target,'wait','جاري التسجيل...');
+  say(target, 'wait', 'جاري التسجيل...');
 
   const payload = { action:'scan', token:state.token, code,
                     eventId: state.activeEvent ? state.activeEvent.id : '' };
@@ -302,15 +401,18 @@ async function record(code, manual, target){
     const r = await call(payload);
     if(r.ok){
       const d = r.data;
-      say(target,'ok', `${d.name}\n${d.state} — ${d.points} نقطة\n${d.event} · ${d.time}`);
+      say(target, 'ok', `${d.name}\n${d.state} — ${d.points} نقطة\n${d.event} · ${d.time}`);
+      toast('ok', d.name + '\n' + d.state);
       beep(true);
     }else{
-      say(target,'bad', r.error || 'حصل خطأ غير معروف');
+      say(target, 'bad', r.error || 'حصل خطأ غير معروف');
+      toast('bad', r.error || 'حصل خطأ غير معروف');
       beep(false);
     }
   }catch(e){
     queueAdd({code, eventId: payload.eventId, at: now()});
-    say(target,'wait','مفيش نت — اتسجّل على الموبايل وهيترفع أول ما النت يرجع');
+    say(target, 'wait', 'مفيش نت — اتسجّل على الموبايل وهيترفع أول ما النت يرجع');
+    toast('warn', 'مفيش نت — التسجيل محفوظ على الموبايل');
   }
 }
 
@@ -319,12 +421,11 @@ function say(id, kind, msg){
   el.className = 'result ' + kind;
   el.style.display = 'block';
   el.textContent = msg;
-  el.scrollIntoView({block:'nearest', behavior:'smooth'});
 }
 
 function beep(good){
   try{
-    const c = new (window.AudioContext||window.webkitAudioContext)();
+    const c = new (window.AudioContext || window.webkitAudioContext)();
     const o = c.createOscillator(), g = c.createGain();
     o.connect(g); g.connect(c.destination);
     o.frequency.value = good ? 880 : 220;
@@ -333,7 +434,7 @@ function beep(good){
   }catch(e){}
 }
 
-/* ---------- طابور الأوفلاين ---------- */
+/* ================= الأوفلاين ================= */
 const qGet = () => JSON.parse(localStorage.getItem(K.queue) || '[]');
 const qSet = a => { localStorage.setItem(K.queue, JSON.stringify(a)); renderQueue(); };
 const queueAdd = it => qSet(qGet().concat([it]));
@@ -356,25 +457,23 @@ async function syncQueue(){
     if(r.ok){
       qSet([]);
       const okN = r.data.results.filter(x => x.ok).length;
-      say('scanRes','ok', `اترفع ${okN} من ${r.data.results.length} تسجيل`);
+      toast('ok', `اترفع ${okN} من ${r.data.results.length} تسجيل`);
     }
-  }catch(e){}
+  }catch(e){ toast('bad', 'الرفع فشل — النت لسه مقطوع'); }
   $('btnSync').disabled = false; $('btnSync').textContent = 'ارفعها دلوقتي';
 }
 
-/* ---------- البحث والتسجيل اليدوي ---------- */
+/* ================= البحث والتسجيل اليدوي ================= */
 $('inSearch').addEventListener('input', function(){
-  const q = this.value.trim().toLowerCase();
+  const q = norm(this.value);
   const list = $('searchList');
   hideConfirm();
   $('manRes').style.display = 'none';
 
-  if(q.length < 1){ list.innerHTML = ''; return; }
+  if(!q){ list.innerHTML = ''; return; }
 
   const hits = state.vols.filter(v =>
-    (v.name||'').toLowerCase().includes(q) ||
-    (v.code||'').toLowerCase().includes(q) ||
-    (v.phone||'').includes(q)
+    v._n.includes(q) || v._c.includes(q) || v._p.includes(q)
   ).slice(0, 20);
 
   if(!hits.length){
@@ -393,20 +492,19 @@ $('inSearch').addEventListener('input', function(){
 
 function pick(v){
   if(!state.activeEvent){
-    return say('manRes','bad','مفيش فعالية مفتوحة دلوقتي — مينفعش تسجل حضور');
+    toast('warn', 'مفيش فعالية مفتوحة دلوقتي — مينفعش تسجل حضور');
+    return;
   }
   state.picked = v;
   $('manName').textContent = v.name;
-  $('manMeta').textContent = `${v.code} · ${v.rank} · سيتسجل في: ${state.activeEvent.name}`;
+  $('manMeta').textContent = `${v.code} · ${v.rank} · هيتسجل في: ${state.activeEvent.name}`;
   $('manConfirm').style.display = 'block';
-  $('manConfirm').scrollIntoView({block:'nearest', behavior:'smooth'});
 }
 
 function hideConfirm(){
   $('manConfirm').style.display = 'none';
   state.picked = null;
 }
-
 $('btnManNo').onclick = hideConfirm;
 
 $('btnManOk').onclick = async () => {
@@ -423,7 +521,7 @@ $('btnManOk').onclick = async () => {
 function esc(s){ return String(s == null ? '' : s).replace(/[<>&"]/g, c =>
   ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
 
-/* ---------- البداية ---------- */
+/* ================= البداية ================= */
 (async () => {
   renderQueue();
   const t = localStorage.getItem(K.tok);
