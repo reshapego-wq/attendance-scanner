@@ -592,6 +592,16 @@ window.addEventListener('pagehide', () => { if(state.qr) stopCam(false); });
   const t = localStorage.getItem(K.tok);
   if(t){ state.token = t; try{ await boot(); syncQueue(); }catch(e){} }
 })();
+
+  fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+  body:JSON.stringify({action:'branding'})}).then(r=>r.json()).then(b=>{
+  if(!b.ok) return;
+  const L=$('logoL'), R=$('logoR');
+  b.data.left ? L.src=b.data.left : L.remove();
+  b.data.right ? R.src=b.data.right : R.remove();
+  $('orgT').textContent = b.data.title||'';
+  if(b.data.left||b.data.right||b.data.title) $('brandBar').style.display='block';
+}).catch(()=>{});
 </script>
 </body>
 </html>
