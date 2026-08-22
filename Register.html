@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>التسجيل كمتطوع</title>
+<style>
+  :root{--primary:#004e92;--deep:#00306b;--dark:#2c3e50;--green:#27ae60;
+        --red:#e74c3c;--amber:#f39c12;--line:#e6eaef}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Segoe UI',Tahoma,sans-serif;color:#22303c;min-height:100vh;
+       background:linear-gradient(170deg,#004e92 0%,#00306b 42%,#eef2f7 42%,#eef2f7 100%);
+       padding:18px 14px 40px;display:flex;justify-content:center}
+  .app{width:100%;max-width:520px}
+
+  .brand{text-align:center;padding:6px 0 20px}
+  .logos{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:12px}
+  .logos img{height:58px;width:auto;object-fit:contain}
+  .brand h1{color:#fff;font-size:21px;font-weight:800;letter-spacing:.2px}
+  .brand p{color:rgba(255,255,255,.82);font-size:13px;margin-top:5px}
+
+  .card{background:#fff;border-radius:18px;padding:22px;
+        box-shadow:0 14px 40px rgba(0,32,80,.16);margin-bottom:14px}
+  h2{font-size:16px;color:var(--primary);margin-bottom:3px}
+  .sub{font-size:12.5px;color:#7b8794;line-height:1.75}
+
+  label{display:block;font-size:13px;font-weight:700;margin:16px 0 6px;color:var(--dark)}
+  label span.opt{font-weight:400;color:#98a2ad;font-size:11.5px}
+  input,select,textarea{width:100%;padding:13px;border:2px solid var(--line);
+    border-radius:11px;font-size:15px;font-family:inherit;outline:none;background:#fff;
+    transition:border-color .15s}
+  input:focus,select:focus,textarea:focus{border-color:var(--primary)}
+  textarea{resize:vertical;min-height:78px}
+  .bad{border-color:var(--red)!important}
+  .msg{font-size:12px;margin-top:5px;line-height:1.6;display:none}
+  .msg.show{display:block}
+  .msg.e{color:var(--red);font-weight:700}
+  .msg.w{color:#a9770d;font-weight:700}
+  .msg.g{color:var(--green);font-weight:700}
+
+  .drop{border:2px dashed #c3ceda;border-radius:12px;padding:20px;text-align:center;
+        cursor:pointer;background:#fafcfe;transition:.15s}
+  .drop:active{background:#eef5ff;border-color:var(--primary)}
+  .drop b{display:block;color:var(--primary);font-size:14px;margin-bottom:3px}
+  .drop small{color:#8b97a3;font-size:11.5px}
+  #prev{width:100%;max-height:190px;object-fit:contain;border-radius:11px;
+        margin-top:10px;display:none;border:1px solid var(--line)}
+
+  .btn{width:100%;padding:15px;border:none;border-radius:12px;font-size:16px;
+       font-weight:800;color:#fff;cursor:pointer;font-family:inherit;margin-top:20px}
+  .btn:disabled{opacity:.5}
+  .btn-p{background:var(--primary)}.btn-g{background:var(--green)}
+  .btn-ghost{background:#fff;color:var(--dark);border:2px solid var(--line);margin-top:10px}
+
+  .closed{text-align:center;padding:14px 4px}
+  .closed .ic{font-size:40px;margin-bottom:10px}
+  .closed h3{font-size:17px;color:var(--dark);margin-bottom:7px}
+
+  .done{text-align:center}
+  .done .ic{font-size:46px;margin-bottom:8px}
+  .code{font-family:monospace;font-size:27px;font-weight:800;color:var(--primary);
+        letter-spacing:2px;background:#eff5fd;border:2px dashed var(--primary);
+        border-radius:12px;padding:15px;margin:15px 0;direction:ltr}
+  #qrimg{width:190px;border-radius:12px;margin:6px auto 4px;display:block;
+         border:1px solid var(--line);padding:8px;background:#fff}
+  .warn{background:#fff8e8;border:1px solid #f2d79a;border-radius:11px;padding:13px;
+        font-size:12.5px;color:#8a5f08;line-height:1.8;margin-top:14px;text-align:right}
+
+  .pill{display:inline-block;background:rgba(255,255,255,.16);color:#fff;
+        border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 14px;
+        font-size:12px;font-weight:700;margin-top:10px}
+  .hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="brand">
+    <div class="logos">
+      <!-- ⬇️ غيّر اللينكين دول بلوجوهاتك -->
+      <img src="https://i.ibb.co/Cp0BsgGf/Ro-B.png" alt="">
+      <img src="https://i.ibb.co/xyYxNB5/RE-B.png" alt="">
+    </div>
+    <h1>التسجيل كمتطوع</h1>
+    <p>املأ بياناتك وهتستلم كودك فوراً</p>
+    <div id="statusPill" class="pill hide"></div>
+  </div>
+
+  <!-- تحميل -->
+  <div id="loading" class="card" style="text-align:center;padding:34px">
+    <p class="sub">جاري التحميل...</p>
+  </div>
+
+  <!-- مقفول -->
+  <div id="closed" class="card hide">
+    <div class="closed">
+      <div class="ic">🔒</div>
+      <h3>التسجيل مقفول حالياً</h3>
+      <p class="sub" id="closedNote"></p>
+    </div>
+  </div>
+
+  <!-- الفورم -->
+  <div id="form" class="card hide">
+    <h2>بياناتك</h2>
+    <p class="sub">كل حاجة عليها نجمة مطلوبة</p>
+
+    <label>الاسم الكامل *</label>
+    <input id="fName" autocomplete="name" placeholder="الاسم بالكامل زي البطاقة">
+    <div class="msg e" id="mName"></div>
+
+    <label>رقم الموبايل (واتساب) *</label>
+    <input id="fPhone" type="tel" inputmode="numeric" maxlength="14" placeholder="01xxxxxxxxx">
+    <div class="msg e" id="mPhone"></div>
+
+    <label>الرقم القومي <span class="opt">— اختياري بس مهم</span></label>
+    <input id="fNid" type="tel" inputmode="numeric" maxlength="14" placeholder="14 رقم">
+    <div class="msg" id="mNid"></div>
+
+    <div id="birthWrap" class="hide">
+      <label>تاريخ الميلاد <span class="opt">— لو مالكش رقم قومي</span></label>
+      <input type="date" id="fBirth">
+    </div>
+
+    <label>صورة البطاقة أو إثبات الشخصية <span class="opt">— اختياري</span></label>
+    <div class="drop" id="drop">
+      <b>اضغط هنا لاختيار صورة</b>
+      <small>من الكاميرا أو المعرض</small>
+    </div>
+    <input type="file" id="fPhoto" accept="image/*" style="display:none">
+    <img id="prev" alt="">
+    <div class="msg g" id="mPhoto"></div>
+
+    <label>الحالة الدراسية / العملية</label>
+    <select id="fStatus"></select>
+
+    <label>مقاس التيشيرت</label>
+    <select id="fShirt"></select>
+
+    <label>مستوى الإنجليزي</label>
+    <select id="fEnglish"></select>
+
+    <label>لغات أخرى</label>
+    <select id="fLangs"></select>
+
+    <label>خبرات سابقة في تنظيم الفعاليات <span class="opt">— اختياري</span></label>
+    <textarea id="fExp" placeholder="اكتب أي خبرة سابقة، ولو مفيش سيبها فاضية"></textarea>
+
+    <button class="btn btn-p" id="btnSend">تسجيل واستلام الكود</button>
+    <div class="msg e" id="mForm" style="text-align:center;margin-top:12px"></div>
+  </div>
+
+  <!-- النتيجة -->
+  <div id="done" class="card hide">
+    <div class="done">
+      <div class="ic" id="doneIc">🎉</div>
+      <h2 id="doneTitle"></h2>
+      <p class="sub" id="doneName"></p>
+      <div class="code" id="doneCode"></div>
+      <img id="qrimg" alt="QR">
+      <p class="sub">ده كودك الشخصي — بيتمسح عند دخول أي فعالية</p>
+      <div class="warn" id="doneWarn"></div>
+      <button class="btn btn-g" id="btnSave">حفظ صورة الكود</button>
+      <button class="btn btn-ghost" id="btnAgain">تسجيل شخص آخر</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ⚠️ نفس رابط الوسيط اللي في index.html
+const API = 'https://script.google.com/macros/s/AKfycbxew0UDHiXeetZMJyhd6t7jiX3igZ6fviqqlLJUQjVPqBuJ7aPbLIjuzKZs7ZdDsPuf/exec';
+
+const $ = id => document.getElementById(id);
+let photo = null;
+
+async function call(p){
+  const r = await fetch(API, {method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(p)});
+  return r.json();
+}
+const AR='٠١٢٣٤٥٦٧٨٩', FA='۰۱۲۳۴۵۶۷۸۹';
+function norm(s){ let o=''; for(const c of String(s==null?'':s)){
+  let i=AR.indexOf(c); if(i<0) i=FA.indexOf(c); o += i>=0?String(i):c; } return o; }
+function show(id, kind, txt){
+  const e=$(id); e.className='msg show '+kind; e.textContent=txt;
+}
+function clear(id){ $(id).className='msg'; }
+
+/* ===== البداية ===== */
+(async () => {
+  try{
+    const st = await call({action:'reg_status'});
+    if(!st.ok) throw new Error(st.error);
+
+    $('loading').classList.add('hide');
+
+    if(!st.data.open){
+      $('closed').classList.remove('hide');
+      $('closedNote').textContent = st.data.note || 'حاول تاني في وقت لاحق';
+      return;
+    }
+    if(st.data.note){
+      $('statusPill').textContent = st.data.note;
+      $('statusPill').classList.remove('hide');
+    }
+
+    const L = await call({action:'reg_lists'});
+    const lists = L.ok ? L.data : {};
+    fill('fStatus',  lists['Status'],           'اختار...');
+    fill('fShirt',   lists['مقاسات التيشيرت'],  'اختار المقاس...');
+    fill('fEnglish', lists['مستوى الإنجليزي'],  'اختار المستوى...');
+    fill('fLangs',   lists['اللغات'],           'اختار...');
+
+    $('form').classList.remove('hide');
+  }catch(e){
+    $('loading').innerHTML =
+      '<p class="sub" style="color:#e74c3c;font-weight:700">مقدرناش نتصل بالنظام.<br>' +
+      'اقفل الصفحة وافتحها تاني، ولو المشكلة فضلت كلّم الإدارة.</p>';
+  }
+})();
+
+function fill(id, arr, placeholder){
+  const opts = (arr && arr.length) ? arr : [];
+  $(id).innerHTML = '<option value="">' + placeholder + '</option>' +
+    opts.map(o => '<option>' + o.replace(/</g,'&lt;') + '</option>').join('');
+}
+
+/* ===== الرقم القومي ===== */
+$('fNid').addEventListener('input', function(){
+  this.value = norm(this.value).replace(/\D/g,'').slice(0,14);
+  const v = this.value;
+
+  if(!v){
+    show('mNid','w','من غير الرقم القومي مش هتظهر في تقرير أعياد الميلاد. لو مالكش رقم، اكتب تاريخ ميلادك تحت.');
+    $('birthWrap').classList.remove('hide');
+    this.classList.remove('bad');
+    return;
+  }
+  $('birthWrap').classList.add('hide');
+
+  if(v.length < 14){
+    show('mNid','w','فاضل ' + (14 - v.length) + ' رقم');
+    this.classList.remove('bad');
+    return;
+  }
+  const b = readNid(v);
+  if(!b){ show('mNid','e','الرقم ده مش صحيح، راجعه'); this.classList.add('bad'); return; }
+  this.classList.remove('bad');
+  show('mNid','g','تاريخ ميلادك: ' + b.txt + ' · ' + b.age + ' سنة');
+});
+$('fNid').dispatchEvent(new Event('input'));
+
+function readNid(n){
+  if(!/^\d{14}$/.test(n)) return null;
+  const c = n[0];
+  if(c!=='2' && c!=='3') return null;
+  const y=(c==='3'?2000:1900)+ +n.slice(1,3), mo=+n.slice(3,5), d=+n.slice(5,7);
+  if(mo<1||mo>12||d<1||d>31) return null;
+  const dt = new Date(y, mo-1, d);
+  if(dt.getDate()!==d || dt.getMonth()!==mo-1 || dt>new Date()) return null;
+  const t = new Date();
+  let a = t.getFullYear()-y;
+  if(t.getMonth()<mo-1 || (t.getMonth()===mo-1 && t.getDate()<d)) a--;
+  return { txt: String(d).padStart(2,'0')+'/'+String(mo).padStart(2,'0')+'/'+y, age: a };
+}
+
+/* ===== الموبايل ===== */
+$('fPhone').addEventListener('input', function(){
+  this.value = norm(this.value).replace(/\D/g,'').slice(0,11);
+  const ok = /^01[0-2,5]\d{8}$/.test(this.value);
+  this.classList.toggle('bad', this.value.length>0 && !ok);
+  if(this.value && !ok) show('mPhone','e','لازم 11 رقم يبدأ بـ 010 أو 011 أو 012 أو 015');
+  else clear('mPhone');
+});
+
+/* ===== الصورة ===== */
+$('drop').onclick = () => $('fPhoto').click();
+$('fPhoto').onchange = function(){
+  const f = this.files && this.files[0];
+  if(!f) return;
+  show('mPhoto','w','جاري تجهيز الصورة...');
+
+  const img = new Image();
+  const rd = new FileReader();
+  rd.onload = () => { img.src = rd.result; };
+  img.onload = () => {
+    const max = 1400;
+    let w = img.width, h = img.height;
+    if(w > max || h > max){ const k = max/Math.max(w,h); w = w*k|0; h = h*k|0; }
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    cv.getContext('2d').drawImage(img, 0, 0, w, h);
+    const url = cv.toDataURL('image/jpeg', 0.82);
+    photo = { data: url.split(',')[1], mime: 'image/jpeg' };
+    $('prev').src = url;
+    $('prev').style.display = 'block';
+    show('mPhoto','g','الصورة جاهزة (' + Math.round(photo.data.length*0.75/1024) + ' ك.ب)');
+  };
+  img.onerror = () => show('mPhoto','e','الملف ده مش صورة');
+  rd.readAsDataURL(f);
+};
+
+/* ===== الإرسال ===== */
+$('btnSend').onclick = async () => {
+  clear('mForm');
+  const name = $('fName').value.trim().replace(/\s+/g,' ');
+  const phone = $('fPhone').value.trim();
+  const nid = $('fNid').value.trim();
+
+  if(name.length < 5){
+    $('fName').classList.add('bad');
+    show('mName','e','اكتب اسمك الكامل'); $('fName').focus(); return;
+  }
+  $('fName').classList.remove('bad'); clear('mName');
+
+  if(!/^01[0-2,5]\d{8}$/.test(phone)){
+    $('fPhone').classList.add('bad');
+    show('mPhone','e','رقم الموبايل مش مظبوط'); $('fPhone').focus(); return;
+  }
+  if(nid && !readNid(nid)){
+    show('mNid','e','الرقم القومي مش صحيح'); $('fNid').focus(); return;
+  }
+
+  $('btnSend').disabled = true;
+  $('btnSend').textContent = photo ? 'جاري رفع الصورة والتسجيل...' : 'جاري التسجيل...';
+
+  try{
+    const r = await call({
+      action:'reg_submit', name, phone, nid,
+      birth:   $('fBirth').value || '',
+      docType: nid ? 'رقم قومي' : 'بدون',
+      status:  $('fStatus').value,
+      shirt:   $('fShirt').value,
+      english: $('fEnglish').value,
+      langs:   $('fLangs').value,
+      exp:     $('fExp').value.trim(),
+      photo
+    });
+
+    if(!r.ok){ show('mForm','e', r.error); return; }
+    showDone(r.data);
+  }catch(e){
+    show('mForm','e','فشل الاتصال. اتأكد من النت وجرّب تاني.');
+  }finally{
+    $('btnSend').disabled = false;
+    $('btnSend').textContent = 'تسجيل واستلام الكود';
+  }
+};
+
+function showDone(d){
+  $('form').classList.add('hide');
+  $('done').classList.remove('hide');
+  $('doneIc').textContent = d.already ? '👋' : '🎉';
+  $('doneTitle').textContent = d.already ? 'إنت مسجّل عندنا قبل كده' : 'أهلاً بيك معانا';
+  $('doneName').textContent = d.name;
+  $('doneCode').textContent = d.code;
+  $('qrimg').src = d.qr;
+  $('doneWarn').innerHTML =
+    '<b>احفظ الصورة دي على موبايلك.</b><br>' +
+    'هتحتاجها عند دخول كل فعالية. لو ضاعت منك، كلّم الإدارة تبعتهالك تاني.';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+$('btnSave').onclick = () => window.open($('qrimg').src, '_blank');
+
+$('btnAgain').onclick = () => {
+  ['fName','fPhone','fNid','fBirth','fExp'].forEach(i => $(i).value = '');
+  ['fStatus','fShirt','fEnglish','fLangs'].forEach(i => $(i).selectedIndex = 0);
+  ['mName','mPhone','mNid','mPhoto','mForm'].forEach(clear);
+  photo = null;
+  $('prev').style.display = 'none';
+  $('done').classList.add('hide');
+  $('form').classList.remove('hide');
+  $('fNid').dispatchEvent(new Event('input'));
+  window.scrollTo({top:0, behavior:'smooth'});
+};
+</script>
+</body>
+</html>
