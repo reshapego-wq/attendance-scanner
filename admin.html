@@ -17,7 +17,7 @@
   h2{font-size:16px;color:var(--dark);margin-bottom:10px}
   .sub{font-size:13px;color:#7a8590}
   label{display:block;font-size:13px;font-weight:600;margin:12px 0 6px;color:var(--dark)}
-  input,select,textarea{width:100%;padding:12px;border:2px solid var(--line);
+  input,select{width:100%;padding:12px;border:2px solid var(--line);
         border-radius:10px;font-size:15px;font-family:inherit;outline:none;background:#fff}
   input:focus,select:focus{border-color:var(--primary)}
   .btn{padding:12px 16px;border:none;border-radius:10px;font-size:15px;font-weight:700;
@@ -50,9 +50,14 @@
   .t-mid{background:#fff8e6;color:#8a5a06}
   .hide{display:none!important}
   .note{font-size:12px;color:#8b95a1;margin-top:8px;line-height:1.6}
+  .err{background:#fdecea;border:2px solid var(--red);color:#96271c;border-radius:10px;
+       padding:13px;margin-top:10px;font-size:14px;font-weight:600;
+       white-space:pre-line;line-height:1.6}
   .perm{display:flex;align-items:center;gap:8px;padding:9px;border:1px solid var(--line);
         border-radius:8px;margin-top:6px;font-size:13px}
   .perm input{width:auto;flex:0}
+  .diag{font-family:monospace;font-size:13px;line-height:2;padding:12px;
+        background:#f7f9fc;border-radius:10px;margin-top:10px;white-space:pre-line}
   #toasts{position:fixed;top:12px;left:50%;transform:translateX(-50%);
           width:calc(100% - 28px);max-width:460px;z-index:9000;
           display:flex;flex-direction:column;gap:8px;pointer-events:none}
@@ -91,6 +96,7 @@
     <label>الكود السري</label>
     <input id="inPin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••">
     <button class="btn btn-p" id="btnLogin">دخول</button>
+    <div id="loginErr" class="err hide"></div>
   </div>
 
   <div id="mainView" class="hide">
@@ -123,9 +129,14 @@
           <button class="btn btn-p" id="evSave">حفظ</button>
           <button class="btn btn-ghost" id="evNew">فعالية جديدة</button>
         </div>
-        <p class="note">صيغة الوقت: 05:00 PM أو 09:30 AM. الكاميرا بتفتح قبل البداية حسب الإعدادات.</p>
+        <p class="note">صيغة الوقت: 05:00 PM أو 09:30 AM</p>
       </div>
-      <div class="card"><h2>كل الفعاليات</h2><div class="scroll" id="evList"></div></div>
+      <div class="card">
+        <h2>كل الفعاليات</h2>
+        <button class="btn btn-ghost btn-sm" onclick="loadEvents()">إعادة تحميل</button>
+        <div id="evErr" class="err hide"></div>
+        <div class="scroll" id="evList"></div>
+      </div>
     </div>
 
     <!-- ===== المتطوعين ===== -->
@@ -137,6 +148,7 @@
             <option value="">الكل</option><option>Active</option>
             <option>Inactive</option><option>Blacklist</option></select></div>
         </div>
+        <div id="vErr" class="err hide"></div>
         <div class="scroll" id="vList"></div>
         <p class="note" id="vCount"></p>
       </div>
@@ -146,14 +158,15 @@
     <div id="tab-qr" class="tabpane hide">
       <div class="card">
         <h2>إرسال كود على واتساب</h2>
-        <p class="sub">ابحث عن المتطوع واضغط إرسال — الرسالة بتتفتح جاهزة</p>
         <input id="qSearch" placeholder="اسم أو كود أو موبايل" autocomplete="off">
         <div class="scroll" id="qList" style="max-height:300px"></div>
       </div>
       <div class="card">
         <h2>إصلاح عمود الواتساب في الشيت</h2>
-        <p class="sub">بيكتب معادلة صحيحة في كل الصفوف — تسحبها لتحت وهتشتغل مع أي متطوع جديد</p>
+        <p class="sub">بيكتب معادلة صحيحة في عمود WP_Link بس.
+           الكود (F) والـ QR (G) مش بيتلمسوا — الأكواد القديمة تفضل شغالة.</p>
         <button class="btn btn-a" id="btnFixWa">اصلح المعادلات دلوقتي</button>
+        <div id="waErr" class="err hide"></div>
       </div>
     </div>
 
@@ -167,6 +180,7 @@
             <button class="btn btn-p" id="btnRank">عرض</button></div>
         </div>
         <p class="note" id="repRange"></p>
+        <div id="rankErr" class="err hide"></div>
         <div class="scroll" id="rankOut"></div>
       </div>
       <div class="card">
@@ -176,6 +190,7 @@
           <div style="display:flex;align-items:flex-end">
             <button class="btn btn-p" id="btnBd">عرض</button></div>
         </div>
+        <div id="bdErr" class="err hide"></div>
         <div class="scroll" id="bdOut"></div>
       </div>
       <div class="card">
@@ -185,6 +200,7 @@
           <div style="display:flex;align-items:flex-end">
             <button class="btn btn-p" id="btnAbs">عرض</button></div>
         </div>
+        <div id="absErr" class="err hide"></div>
         <div class="scroll" id="absOut"></div>
       </div>
     </div>
@@ -193,7 +209,8 @@
     <div id="tab-set" class="tabpane hide">
       <div class="card">
         <h2>الإعدادات</h2>
-        <p class="sub">النقاط وحدود التأخير ووقت فتح الكاميرا</p>
+        <button class="btn btn-ghost btn-sm" onclick="loadSettings()">إعادة تحميل</button>
+        <div id="setErr" class="err hide"></div>
         <div id="setList"></div>
         <button class="btn btn-p" id="btnSetSave">حفظ الإعدادات</button>
       </div>
@@ -203,8 +220,20 @@
     <div id="tab-adm" class="tabpane hide">
       <div class="card">
         <h2>الإداريين والصلاحيات</h2>
+        <p class="sub">اضغط تعديل عشان توقف إداري أو تزوّد وتشيل صلاحيات</p>
         <button class="btn btn-g" id="btnAdmNew">إضافة إداري</button>
+        <div id="admErr" class="err hide"></div>
         <div class="scroll" id="admList"></div>
+      </div>
+    </div>
+
+    <!-- ===== فحص النظام ===== -->
+    <div id="tab-diag" class="tabpane hide">
+      <div class="card">
+        <h2>فحص النظام</h2>
+        <p class="sub">بيجرّب كل أمر على الوسيط ويقولك اللي ناقص</p>
+        <button class="btn btn-p" id="btnDiag">ابدأ الفحص</button>
+        <div class="diag" id="diagOut"></div>
       </div>
     </div>
 
@@ -217,7 +246,7 @@ const API = 'https://script.google.com/macros/s/AKfycbxASGDOzB6zEv5O-SRosE_7rHC0
 
 const K = { tok:'v4_token', name:'v4_name' };
 const $ = id => document.getElementById(id);
-let S = { token:null, me:null, lists:{}, vols:[], events:[], permLabels:{} };
+let S = { token:null, me:null, lists:{}, vols:[], events:[] };
 
 const PERM_AR = {
   scan:'مسح الحضور', manual:'تسجيل يدوي', events:'إدارة الفعاليات',
@@ -227,22 +256,32 @@ const PERM_AR = {
 };
 
 const TABS = [
-  {id:'events', ar:'الفعاليات',      perm:'events'},
-  {id:'vols',   ar:'المتطوعين',      perm:null},
-  {id:'qr',     ar:'إرسال الأكواد',  perm:null},
-  {id:'rep',    ar:'التقارير',       perm:'reports'},
-  {id:'set',    ar:'الإعدادات',      perm:'points'},
-  {id:'adm',    ar:'الإداريين',      perm:'admins'}
+  {id:'events', ar:'الفعاليات',     perm:'events'},
+  {id:'vols',   ar:'المتطوعين',     perm:null},
+  {id:'qr',     ar:'إرسال الأكواد', perm:null},
+  {id:'rep',    ar:'التقارير',      perm:'reports'},
+  {id:'set',    ar:'الإعدادات',     perm:'points'},
+  {id:'adm',    ar:'الإداريين',     perm:'admins'},
+  {id:'diag',   ar:'فحص النظام',    perm:null}
 ];
 
-/* ===== تنبيهات ===== */
+/* ===== تنبيهات وأخطاء ===== */
 function toast(k, m, ms){
   const el = document.createElement('div');
   el.className = 'toast t-' + k; el.textContent = m;
   $('toasts').appendChild(el);
   setTimeout(() => { el.style.transition='opacity .3s'; el.style.opacity='0';
-                     setTimeout(()=>el.remove(),320); }, ms || (k==='bad'?5500:3200));
+                     setTimeout(()=>el.remove(),320); }, ms || (k==='bad'?6000:3200));
 }
+function showErr(id, msg){
+  const el = $(id);
+  if(!el) return;
+  el.textContent = msg;
+  el.classList.remove('hide');
+  toast('bad', msg);
+}
+function hideErr(id){ const el=$(id); if(el) el.classList.add('hide'); }
+
 let mYes = null;
 function ask(title, bodyHtml, onYes, okLabel){
   $('mTitle').textContent = title;
@@ -256,13 +295,18 @@ $('mYes').onclick = () => { const f=mYes; mYes=null; $('modal').classList.remove
 /* ===== الاتصال ===== */
 async function call(p){
   p.token = S.token;
-  const r = await fetch(API, {method:'POST',
-    headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(p)});
-  const j = await r.json();
-  if(!j.ok && /الجلسة انتهت/.test(j.error||'')){
-    localStorage.removeItem(K.tok); location.reload();
+  try{
+    const r = await fetch(API, {method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(p)});
+    const j = await r.json();
+    if(!j.ok && /الجلسة انتهت/.test(j.error||'')){
+      localStorage.removeItem(K.tok);
+      setTimeout(()=>location.reload(), 1200);
+    }
+    return j;
+  }catch(e){
+    return { ok:false, error:'فشل الاتصال بالوسيط.\nاتأكد إن الرابط صح وإنك عملت Deploy.' };
   }
-  return j;
 }
 const AR='٠١٢٣٤٥٦٧٨٩', FA='۰۱۲۳۴۵۶۷۸۹';
 function norm(s){ let o=''; for(const c of String(s==null?'':s)){
@@ -274,16 +318,15 @@ function esc(s){ return String(s==null?'':s).replace(/[<>&"]/g,c=>
 /* ===== الدخول ===== */
 $('btnLogin').onclick = async () => {
   const name=$('inName').value.trim(), pin=norm($('inPin').value);
-  if(!name||!/^\d{4}$/.test(pin)) return toast('bad','اكتب اسمك وكود من ٤ أرقام');
+  if(!name||!/^\d{4}$/.test(pin)) return showErr('loginErr','اكتب اسمك وكود من ٤ أرقام');
+  hideErr('loginErr');
   $('btnLogin').disabled=true;
-  try{
-    const r = await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify({action:'login',name,pin})}).then(x=>x.json());
-    if(!r.ok) return toast('bad', r.error);
-    localStorage.setItem(K.tok,r.data.token); localStorage.setItem(K.name,r.data.name);
-    S.token=r.data.token; await boot();
-  }catch(e){ toast('bad','مفيش اتصال'); }
-  finally{ $('btnLogin').disabled=false; }
+  const r = await call({action:'login', name, pin});
+  $('btnLogin').disabled=false;
+  if(!r.ok) return showErr('loginErr', r.error);
+  localStorage.setItem(K.tok,r.data.token); localStorage.setItem(K.name,r.data.name);
+  S.token=r.data.token;
+  await boot();
 };
 $('inPin').addEventListener('keydown', e=>{ if(e.key==='Enter') $('btnLogin').click(); });
 $('btnOut').onclick = () => ask('تسجيل خروج','<p class="sub">هترجع لشاشة الدخول.</p>',()=>{
@@ -292,14 +335,16 @@ $('btnOut').onclick = () => ask('تسجيل خروج','<p class="sub">هترجع
 /* ===== التحميل ===== */
 async function boot(){
   const r = await call({action:'bootstrap'});
-  if(!r.ok){ localStorage.removeItem(K.tok); return toast('bad', r.error); }
+  if(!r.ok){ localStorage.removeItem(K.tok); return showErr('loginErr', r.error); }
   S.me = r.data.me;
   $('loginView').classList.add('hide'); $('mainView').classList.remove('hide');
   $('whoName').textContent = S.me.name;
 
   buildTabs();
+
   const L = await call({action:'lists'});
-  if(L.ok) S.lists = L.data;
+  S.lists = L.ok ? L.data : {};
+  if(!L.ok) toast('warn', 'مقدرتش أجيب القوايم من شيت Source:\n' + L.error);
 
   fillSelect('evType', S.lists['أنواع الفعاليات'] || ['Rooted','Training','Event']);
   const y = new Date().getFullYear();
@@ -309,12 +354,13 @@ async function boot(){
     'أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'].map((m,i)=>({v:i+1,t:m})));
   $('repMonth').value = String(new Date().getMonth()+1);
 
-  await Promise.all([loadEvents(), loadVols()]);
+  await loadEvents();
+  await loadVols();
 }
 
 function fillSelect(id, arr){
   $(id).innerHTML = arr.map(o => typeof o === 'object'
-    ? `<option value="${o.v}">${esc(o.t)}</option>`
+    ? `<option value="${esc(o.v)}">${esc(o.t)}</option>`
     : `<option value="${esc(o)}">${esc(o)}</option>`).join('');
 }
 
@@ -329,27 +375,37 @@ function buildTabs(){
     b.classList.add('on');
     document.querySelectorAll('.tabpane').forEach(p=>p.classList.add('hide'));
     $('tab-'+b.dataset.t).classList.remove('hide');
+    if(b.dataset.t === 'set') loadSettings();
+    if(b.dataset.t === 'adm') loadAdmins();
   });
 }
 
 /* ===== الفعاليات ===== */
 async function loadEvents(){
+  hideErr('evErr');
+  $('evList').innerHTML = '<p class="note" style="padding:14px">جاري التحميل...</p>';
   const r = await call({action:'events_list'});
-  if(!r.ok) return;
-  S.events = r.data.events;
+  if(!r.ok){ $('evList').innerHTML=''; return showErr('evErr', r.error); }
+  S.events = r.data.events || [];
+
+  if(!S.events.length){
+    $('evList').innerHTML = '<p class="note" style="padding:14px">مفيش فعاليات في الشيت</p>';
+    return;
+  }
 
   $('evList').innerHTML = `<table><thead><tr><th>الاسم</th><th>النوع</th><th>التاريخ</th>
     <th>اليوم</th><th>الحالة</th><th></th></tr></thead><tbody>` +
     S.events.map(e => {
       const cls = e.state==='مفتوحة دلوقتي'?'t-on':e.state==='مجدولة'?'t-mid':'t-off';
-      return `<tr><td>${esc(e.name)}</td><td>${esc(e.type)}</td><td>${e.dateStr}</td>
-        <td>${e.day}</td><td><span class="tag ${cls}">${e.state}</span></td>
-        <td><button class="btn btn-ghost btn-sm" data-ed="${e.row}">تعديل</button>
-            <button class="btn btn-r btn-sm" data-del="${e.row}">حذف</button></td></tr>`;
+      return `<tr><td style="text-align:right">${esc(e.name)}</td><td>${esc(e.type)}</td>
+        <td>${esc(e.dateStr)}</td><td>${esc(e.day)}</td>
+        <td><span class="tag ${cls}">${esc(e.state)}</span></td>
+        <td><button class="btn btn-ghost btn-sm" data-ed="${esc(e.row)}">تعديل</button>
+            <button class="btn btn-r btn-sm" data-del="${esc(e.row)}">حذف</button></td></tr>`;
     }).join('') + '</tbody></table>';
 
   $('evList').querySelectorAll('[data-ed]').forEach(b =>
-    b.onclick = () => editEvent(S.events.find(e => e.row == b.dataset.ed)));
+    b.onclick = () => editEvent(S.events.find(e => String(e.row) === b.dataset.ed)));
   $('evList').querySelectorAll('[data-del]').forEach(b =>
     b.onclick = () => delEvent(+b.dataset.del));
 
@@ -378,40 +434,48 @@ $('evSave').onclick = async () => {
              type:$('evType').value, date:$('evDate').value,
              start:$('evStart').value.trim().toUpperCase(),
              end:$('evEnd').value.trim().toUpperCase()};
-  if(!p.name) return toast('bad','اكتب اسم الفعالية');
+  if(!p.name) return showErr('evErr','اكتب اسم الفعالية');
+  hideErr('evErr');
   $('evSave').disabled=true;
   const r = await call(p);
   $('evSave').disabled=false;
-  if(!r.ok) return toast('bad', r.error);
+  if(!r.ok) return showErr('evErr', r.error);
   toast('ok', r.data.msg); $('evNew').click(); loadEvents();
 };
 function delEvent(row){
-  const e = S.events.find(x=>x.row==row);
+  const e = S.events.find(x=>String(x.row)===String(row));
   ask('حذف فعالية', `<p class="sub">هيتم حذف "<b>${esc(e.name)}</b>" نهائياً.<br>
       لو عليها تسجيلات حضور، الحذف هيترفض.</p>`, async () => {
     const r = await call({action:'event_delete', row});
-    r.ok ? (toast('ok',r.data.msg), loadEvents()) : toast('bad', r.error);
+    r.ok ? (toast('ok',r.data.msg), loadEvents()) : showErr('evErr', r.error);
   }, 'احذف');
 }
 
 /* ===== المتطوعين ===== */
 async function loadVols(){
+  hideErr('vErr');
+  $('vList').innerHTML = '<p class="note" style="padding:14px">جاري التحميل...</p>';
   const r = await call({action:'volunteers_list'});
-  if(!r.ok) return;
-  S.vols = r.data.volunteers;
-  S.vols.forEach(v => v._s = norm(v.name+v.code+v.phone));
+  if(!r.ok){ $('vList').innerHTML=''; return showErr('vErr', r.error); }
+  S.vols = r.data.volunteers || [];
+  S.vols.forEach(v => v._s = norm(v.name + v.code + v.phone));
   renderVols(); renderQrList();
 }
 function renderVols(){
   const q = norm($('vSearch').value), f = $('vFilter').value;
   const rows = S.vols.filter(v => (!q||v._s.includes(q)) && (!f||v.status===f));
   $('vCount').textContent = `ظاهر ${rows.length} من ${S.vols.length}`;
+  if(!rows.length){
+    $('vList').innerHTML = '<p class="note" style="padding:14px">مفيش نتائج</p>';
+    return;
+  }
   $('vList').innerHTML = `<table><thead><tr><th>الاسم</th><th>الكود</th><th>الموبايل</th>
     <th>الفئة</th><th>الحالة</th><th></th></tr></thead><tbody>` +
     rows.map(v => {
       const cls = v.status==='Active'?'t-on':v.status==='Inactive'?'t-off':'t-mid';
-      return `<tr><td>${esc(v.name)}</td><td>${esc(v.code)}</td><td>${esc(v.phone)}</td>
-        <td>${esc(v.rank)}</td><td><span class="tag ${cls}">${esc(v.status)}</span></td>
+      return `<tr><td style="text-align:right">${esc(v.name)}</td><td>${esc(v.code)}</td>
+        <td>${esc(v.phone)}</td><td>${esc(v.rank)}</td>
+        <td><span class="tag ${cls}">${esc(v.status)}</span></td>
         <td><button class="btn btn-ghost btn-sm" data-v="${esc(v.code)}">تعديل</button></td></tr>`;
     }).join('') + '</tbody></table>';
   $('vList').querySelectorAll('[data-v]').forEach(b =>
@@ -433,11 +497,11 @@ function editVol(v){
     <p class="note">الكود ${esc(v.code)} ثابت ومش بيتغير.</p>`, async () => {
       const a = await call({action:'volunteer_save', code:v.code, name:$('edN').value,
                             phone:$('edP').value, rank:$('edR').value});
-      if(!a.ok) return toast('bad', a.error);
+      if(!a.ok) return showErr('vErr', a.error);
       const st = $('edS').value;
       if(st !== v.status){
         const b = await call({action:'volunteer_toggle', code:v.code, status:st});
-        if(!b.ok) return toast('bad', b.error);
+        if(!b.ok) return showErr('vErr', b.error);
       }
       toast('ok','اتحفظت البيانات'); loadVols();
     }, 'حفظ');
@@ -466,22 +530,25 @@ async function sendQr(code){
   ask('إرسال الكود', `
     <p style="text-align:center"><b>${esc(d.name)}</b><br>
     <small class="sub">${esc(d.code)} · ${esc(d.phone)}</small></p>
-    <img src="${d.qr}" style="width:170px;display:block;margin:12px auto;border-radius:10px">
+    <img src="${esc(d.qr)}" style="width:170px;display:block;margin:12px auto;border-radius:10px">
     <p class="note">هيتفتح واتساب بالرسالة جاهزة.</p>`,
     () => window.open(d.waLink, '_blank'), 'افتح واتساب');
 }
 $('btnFixWa').onclick = () => ask('إصلاح معادلات الواتساب',
-  '<p class="sub">هيتكتب معادلة صحيحة في عمود WP_Link لكل الصفوف. المعادلة دي بتسحب صح لأي متطوع جديد.</p>',
+  `<p class="sub">هيتكتب معادلة صحيحة في عمود WP_Link لكل الصفوف.<br><br>
+   <b>عمود الكود (F) والـ QR (G) مش هيتلمسوا.</b> أي كود مع أي حد دلوقتي هيفضل شغال.</p>`,
   async () => {
+    hideErr('waErr');
     const r = await call({action:'fix_wa_links'});
-    toast(r.ok?'ok':'bad', r.ok ? r.data.msg : r.error);
+    r.ok ? toast('ok', r.data.msg) : showErr('waErr', r.error);
   }, 'اصلح');
 
 /* ===== التقارير ===== */
 $('btnRank').onclick = async () => {
+  hideErr('rankErr');
   $('rankOut').innerHTML = '<p class="note" style="padding:14px">جاري الحساب...</p>';
   const r = await call({action:'report_ranking', year:$('repYear').value});
-  if(!r.ok) return toast('bad', r.error);
+  if(!r.ok){ $('rankOut').innerHTML=''; return showErr('rankErr', r.error); }
   $('repRange').textContent = `من ${r.data.from} إلى ${r.data.to}`;
 
   let h = `<table><thead><tr><th>#</th><th>الاسم</th><th>Rooted</th><th>Training</th>
@@ -499,22 +566,24 @@ $('btnRank').onclick = async () => {
 };
 
 $('btnBd').onclick = async () => {
+  hideErr('bdErr');
   const r = await call({action:'report_birthdays', month:$('repMonth').value});
-  if(!r.ok) return toast('bad', r.error);
+  if(!r.ok){ $('bdOut').innerHTML=''; return showErr('bdErr', r.error); }
   $('bdOut').innerHTML = r.data.rows.length
     ? `<table><thead><tr><th>اليوم</th><th>الاسم</th><th>الفئة</th>
        <th>التاريخ</th><th>العمر</th></tr></thead><tbody>` +
       r.data.rows.map(x => `<tr><td><b>${x.day}</b></td>
         <td style="text-align:right">${esc(x.name)}</td><td>${esc(x.rank)}</td>
-        <td>${x.date}</td><td>${x.age}</td></tr>`).join('') + '</tbody></table>'
+        <td>${esc(x.date)}</td><td>${esc(x.age)}</td></tr>`).join('') + '</tbody></table>'
     : '<p class="note" style="padding:14px">مفيش أعياد ميلاد في الشهر ده</p>';
 };
 
 $('btnAbs').onclick = async () => {
+  hideErr('absErr');
   const r = await call({action:'report_absence', eventId:$('repEvent').value});
-  if(!r.ok) return toast('bad', r.error);
+  if(!r.ok){ $('absOut').innerHTML=''; return showErr('absErr', r.error); }
   const d = r.data;
-  let h = `<p class="note" style="padding:10px">${esc(d.event.name)} — ${d.event.date} ·
+  let h = `<p class="note" style="padding:10px">${esc(d.event.name)} — ${esc(d.event.date)} ·
            حضر <b>${d.present.length}</b> · غاب <b>${d.absent.length}</b></p>
            <table><thead><tr><th>الاسم</th><th>الفئة</th><th>الحالة</th>
            <th>الوقت</th><th>النقاط</th></tr></thead><tbody>`;
@@ -530,34 +599,44 @@ $('btnAbs').onclick = async () => {
 
 /* ===== الإعدادات ===== */
 async function loadSettings(){
+  hideErr('setErr');
+  $('setList').innerHTML = '<p class="note">جاري التحميل...</p>';
   const r = await call({action:'settings_get'});
-  if(!r.ok) return;
-  $('setList').innerHTML = r.data.items.map(i =>
-    `<label>${esc(i.key)}</label><input data-k="${esc(i.key)}" value="${esc(i.value)}">
-     <p class="note">${esc(i.note)}</p>`).join('');
+  if(!r.ok){ $('setList').innerHTML=''; return showErr('setErr', r.error); }
+  const items = r.data.items || [];
+  $('setList').innerHTML = items.length
+    ? items.map(i => `<label>${esc(i.key)}</label>
+        <input data-k="${esc(i.key)}" value="${esc(i.value)}">
+        <p class="note">${esc(i.note)}</p>`).join('')
+    : '<p class="note">شيت Settings فاضي</p>';
 }
 $('btnSetSave').onclick = async () => {
+  hideErr('setErr');
   const items = [...$('setList').querySelectorAll('[data-k]')]
     .map(i => ({key:i.dataset.k, value:i.value}));
+  if(!items.length) return showErr('setErr','مفيش إعدادات محمّلة');
   const r = await call({action:'settings_save', items});
-  toast(r.ok?'ok':'bad', r.ok ? r.data.msg : r.error);
+  r.ok ? toast('ok', r.data.msg) : showErr('setErr', r.error);
 };
 
 /* ===== الإداريين ===== */
 async function loadAdmins(){
+  hideErr('admErr');
+  $('admList').innerHTML = '<p class="note" style="padding:14px">جاري التحميل...</p>';
   const r = await call({action:'admins_list'});
-  if(!r.ok) return;
+  if(!r.ok){ $('admList').innerHTML=''; return showErr('admErr', r.error); }
+  const admins = r.data.admins || [];
   $('admList').innerHTML = `<table><thead><tr><th>الاسم</th><th>الحالة</th>
     <th>الصلاحيات</th><th></th></tr></thead><tbody>` +
-    r.data.admins.map(a => {
+    admins.map(a => {
       const on = Object.keys(a.perms).filter(k=>a.perms[k]).length;
-      return `<tr><td>${esc(a.name)}</td>
+      return `<tr><td style="text-align:right">${esc(a.name)}</td>
         <td><span class="tag ${a.active?'t-on':'t-off'}">${a.active?'نشط':'موقوف'}</span></td>
         <td>${on} من ${Object.keys(a.perms).length}</td>
-        <td><button class="btn btn-ghost btn-sm" data-a="${a.row}">تعديل</button></td></tr>`;
+        <td><button class="btn btn-ghost btn-sm" data-a="${esc(a.row)}">تعديل</button></td></tr>`;
     }).join('') + '</tbody></table>';
   $('admList').querySelectorAll('[data-a]').forEach(b =>
-    b.onclick = () => admForm(r.data.admins.find(a => a.row == b.dataset.a)));
+    b.onclick = () => admForm(admins.find(a => String(a.row) === b.dataset.a)));
 }
 function admForm(a){
   const p = a ? a.perms : {};
@@ -577,22 +656,48 @@ function admForm(a){
       Object.keys(PERM_AR).forEach(k => perms[k] = $('pm_'+k).checked);
       const r = await call({action:'admin_save', row: a?a.row:0, name:$('adN').value.trim(),
                             pin: norm($('adP').value), active: $('adA').value==='1', perms});
-      r.ok ? (toast('ok', r.data.msg), loadAdmins()) : toast('bad', r.error);
+      r.ok ? (toast('ok', r.data.msg), loadAdmins()) : showErr('admErr', r.error);
     }, 'حفظ');
 }
 $('btnAdmNew').onclick = () => admForm(null);
 
-/* ===== تحميل التبويبات عند فتحها ===== */
-document.addEventListener('click', e => {
-  const b = e.target.closest('.tab'); if(!b) return;
-  if(b.dataset.t === 'set') loadSettings();
-  if(b.dataset.t === 'adm') loadAdmins();
-});
+/* ===== فحص النظام ===== */
+$('btnDiag').onclick = async () => {
+  const checks = [
+    ['bootstrap',        {}],
+    ['lists',            {}],
+    ['events_list',      {}],
+    ['volunteers_list',  {}],
+    ['qr_get',           {code:'__test__'}],
+    ['report_ranking',   {year:new Date().getFullYear()}],
+    ['report_birthdays', {month:1}],
+    ['report_absence',   {eventId:''}],
+    ['settings_get',     {}],
+    ['admins_list',      {}],
+    ['fix_wa_links',     {dryRun:true}]
+  ];
+  $('diagOut').textContent = 'جاري الفحص...';
+  let out = '', missing = 0;
+
+  for(const [act, extra] of checks){
+    if(act === 'fix_wa_links'){ out += `⏭️ ${act} — اتخطى (بيعدّل الشيت)\n`; continue; }
+    const r = await call(Object.assign({action:act}, extra));
+    if(r.ok) out += `✅ ${act}\n`;
+    else if(/أمر غير معروف/.test(r.error)){ out += `❌ ${act} — ناقص من Admin.gs\n`; missing++; }
+    else out += `⚠️ ${act} — ${r.error}\n`;
+    $('diagOut').textContent = out;
+  }
+
+  out += '\n' + (missing
+    ? `فيه ${missing} أمر ناقص.\nملف Admin.gs اتلزق ناقص — الصقه من الأول واعمل Deploy → New version.`
+    : 'كل الأوامر موجودة على الوسيط.');
+  $('diagOut').textContent = out;
+};
 
 /* ===== البداية ===== */
 (async () => {
   const t = localStorage.getItem(K.tok);
-  if(t){ S.token = t; try{ await boot(); }catch(e){ localStorage.removeItem(K.tok); } }
+  if(t){ S.token = t; await boot(); }
 })();
 </script>
 </body>
