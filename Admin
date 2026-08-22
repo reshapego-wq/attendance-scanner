@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>لوحة الإدارة</title>
+<style>
+  :root{--primary:#004e92;--dark:#2c3e50;--green:#27ae60;--red:#e74c3c;
+        --amber:#f39c12;--line:#e3e6ea}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Segoe UI',Tahoma,sans-serif;background:#eef1f5;color:#233;
+       min-height:100vh;padding:14px;display:flex;justify-content:center}
+  .app{width:100%;max-width:900px}
+  .card{background:#fff;border-radius:14px;padding:18px;margin-bottom:14px;
+        box-shadow:0 2px 10px rgba(0,0,0,.06)}
+  h1{font-size:19px;color:var(--primary);margin-bottom:4px}
+  h2{font-size:16px;color:var(--dark);margin-bottom:10px}
+  .sub{font-size:13px;color:#7a8590}
+  label{display:block;font-size:13px;font-weight:600;margin:12px 0 6px;color:var(--dark)}
+  input,select,textarea{width:100%;padding:12px;border:2px solid var(--line);
+        border-radius:10px;font-size:15px;font-family:inherit;outline:none;background:#fff}
+  input:focus,select:focus{border-color:var(--primary)}
+  .btn{padding:12px 16px;border:none;border-radius:10px;font-size:15px;font-weight:700;
+       color:#fff;cursor:pointer;font-family:inherit;margin-top:10px;width:100%}
+  .btn:disabled{opacity:.45}
+  .btn-p{background:var(--primary)}.btn-g{background:var(--green)}
+  .btn-r{background:var(--red)}.btn-a{background:var(--amber)}
+  .btn-ghost{background:#fff;color:var(--dark);border:2px solid var(--line)}
+  .btn-sm{padding:7px 12px;font-size:12px;width:auto;margin:2px}
+  .row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1;min-width:130px}
+  .top{display:flex;justify-content:space-between;align-items:center;background:#fff;
+       border-radius:14px;padding:12px 16px;margin-bottom:14px;
+       box-shadow:0 2px 10px rgba(0,0,0,.06)}
+  .who{font-size:14px;font-weight:700;color:var(--dark)}
+  .link{background:none;border:none;color:var(--primary);font-size:13px;
+        cursor:pointer;font-family:inherit;font-weight:700;margin-right:10px}
+  .tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:14px;padding-bottom:4px}
+  .tab{padding:11px 16px;border:none;border-radius:10px;background:#fff;color:var(--dark);
+       font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+  .tab.on{background:var(--primary);color:#fff}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:center}
+  th{background:var(--dark);color:#fff;font-weight:600;position:sticky;top:0}
+  tbody tr:hover{background:#f6f9ff}
+  .scroll{overflow-x:auto;max-height:65vh;overflow-y:auto;border:1px solid var(--line);
+          border-radius:10px;margin-top:10px}
+  .grp{background:#eaf1fb;font-weight:700;color:var(--primary);text-align:right;padding:9px 12px}
+  .tag{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
+  .t-on{background:#e8f8ee;color:#1b6b3f}.t-off{background:#fdecea;color:#96271c}
+  .t-mid{background:#fff8e6;color:#8a5a06}
+  .hide{display:none!important}
+  .note{font-size:12px;color:#8b95a1;margin-top:8px;line-height:1.6}
+  .perm{display:flex;align-items:center;gap:8px;padding:9px;border:1px solid var(--line);
+        border-radius:8px;margin-top:6px;font-size:13px}
+  .perm input{width:auto;flex:0}
+  #toasts{position:fixed;top:12px;left:50%;transform:translateX(-50%);
+          width:calc(100% - 28px);max-width:460px;z-index:9000;
+          display:flex;flex-direction:column;gap:8px;pointer-events:none}
+  .toast{background:#fff;border-radius:12px;padding:13px 16px;font-size:14px;font-weight:600;
+         line-height:1.5;box-shadow:0 6px 22px rgba(0,0,0,.16);
+         border-right:6px solid var(--primary);white-space:pre-line}
+  .toast.t-ok{border-right-color:var(--green);color:#1b6b3f;background:#f2fcf6}
+  .toast.t-bad{border-right-color:var(--red);color:#96271c;background:#fef5f4}
+  .toast.t-warn{border-right-color:var(--amber);color:#8a5a06;background:#fffaf0}
+  #modal{position:fixed;inset:0;background:rgba(20,28,38,.55);z-index:9500;
+         display:none;align-items:center;justify-content:center;padding:20px}
+  #modal.on{display:flex}
+  .mbox{background:#fff;border-radius:16px;padding:22px;width:100%;max-width:400px;
+        max-height:85vh;overflow-y:auto}
+  .mbox h2{text-align:center}
+</style>
+</head>
+<body>
+
+<div id="toasts"></div>
+<div id="modal"><div class="mbox">
+  <h2 id="mTitle"></h2><div id="mBody"></div>
+  <div class="row">
+    <button class="btn btn-p" id="mYes">تأكيد</button>
+    <button class="btn btn-ghost" id="mNo">إلغاء</button>
+  </div>
+</div></div>
+
+<div class="app">
+
+  <div id="loginView" class="card">
+    <h1>لوحة الإدارة</h1>
+    <p class="sub">سجّل دخولك</p>
+    <label>اسم الإداري</label>
+    <input id="inName" autocomplete="off">
+    <label>الكود السري</label>
+    <input id="inPin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••">
+    <button class="btn btn-p" id="btnLogin">دخول</button>
+  </div>
+
+  <div id="mainView" class="hide">
+    <div class="top">
+      <div><div class="who" id="whoName"></div><div class="sub">لوحة الإدارة</div></div>
+      <div>
+        <button class="link" onclick="location.href='index.html'">الكاميرا</button>
+        <button class="link" id="btnOut" style="color:var(--red)">خروج</button>
+      </div>
+    </div>
+
+    <div class="tabs" id="tabs"></div>
+
+    <!-- ===== الفعاليات ===== -->
+    <div id="tab-events" class="tabpane">
+      <div class="card">
+        <h2 id="evTitle">فعالية جديدة</h2>
+        <input type="hidden" id="evRow">
+        <label>اسم الفعالية</label>
+        <input id="evName" autocomplete="off">
+        <div class="row">
+          <div><label>النوع</label><select id="evType"></select></div>
+          <div><label>التاريخ</label><input type="date" id="evDate"></div>
+        </div>
+        <div class="row">
+          <div><label>البداية</label><input id="evStart" placeholder="05:00 PM"></div>
+          <div><label>النهاية</label><input id="evEnd" placeholder="08:00 PM"></div>
+        </div>
+        <div class="row">
+          <button class="btn btn-p" id="evSave">حفظ</button>
+          <button class="btn btn-ghost" id="evNew">فعالية جديدة</button>
+        </div>
+        <p class="note">صيغة الوقت: 05:00 PM أو 09:30 AM. الكاميرا بتفتح قبل البداية حسب الإعدادات.</p>
+      </div>
+      <div class="card"><h2>كل الفعاليات</h2><div class="scroll" id="evList"></div></div>
+    </div>
+
+    <!-- ===== المتطوعين ===== -->
+    <div id="tab-vols" class="tabpane hide">
+      <div class="card">
+        <div class="row">
+          <div><label>بحث</label><input id="vSearch" placeholder="اسم أو كود أو موبايل"></div>
+          <div><label>الحالة</label><select id="vFilter">
+            <option value="">الكل</option><option>Active</option>
+            <option>Inactive</option><option>Blacklist</option></select></div>
+        </div>
+        <div class="scroll" id="vList"></div>
+        <p class="note" id="vCount"></p>
+      </div>
+    </div>
+
+    <!-- ===== إرسال الأكواد ===== -->
+    <div id="tab-qr" class="tabpane hide">
+      <div class="card">
+        <h2>إرسال كود على واتساب</h2>
+        <p class="sub">ابحث عن المتطوع واضغط إرسال — الرسالة بتتفتح جاهزة</p>
+        <input id="qSearch" placeholder="اسم أو كود أو موبايل" autocomplete="off">
+        <div class="scroll" id="qList" style="max-height:300px"></div>
+      </div>
+      <div class="card">
+        <h2>إصلاح عمود الواتساب في الشيت</h2>
+        <p class="sub">بيكتب معادلة صحيحة في كل الصفوف — تسحبها لتحت وهتشتغل مع أي متطوع جديد</p>
+        <button class="btn btn-a" id="btnFixWa">اصلح المعادلات دلوقتي</button>
+      </div>
+    </div>
+
+    <!-- ===== التقارير ===== -->
+    <div id="tab-rep" class="tabpane hide">
+      <div class="card">
+        <h2>الترتيب العام</h2>
+        <div class="row">
+          <div><label>السنة</label><select id="repYear"></select></div>
+          <div style="display:flex;align-items:flex-end">
+            <button class="btn btn-p" id="btnRank">عرض</button></div>
+        </div>
+        <p class="note" id="repRange"></p>
+        <div class="scroll" id="rankOut"></div>
+      </div>
+      <div class="card">
+        <h2>أعياد الميلاد</h2>
+        <div class="row">
+          <div><label>الشهر</label><select id="repMonth"></select></div>
+          <div style="display:flex;align-items:flex-end">
+            <button class="btn btn-p" id="btnBd">عرض</button></div>
+        </div>
+        <div class="scroll" id="bdOut"></div>
+      </div>
+      <div class="card">
+        <h2>الحضور والغياب</h2>
+        <div class="row">
+          <div><label>الفعالية</label><select id="repEvent"></select></div>
+          <div style="display:flex;align-items:flex-end">
+            <button class="btn btn-p" id="btnAbs">عرض</button></div>
+        </div>
+        <div class="scroll" id="absOut"></div>
+      </div>
+    </div>
+
+    <!-- ===== الإعدادات ===== -->
+    <div id="tab-set" class="tabpane hide">
+      <div class="card">
+        <h2>الإعدادات</h2>
+        <p class="sub">النقاط وحدود التأخير ووقت فتح الكاميرا</p>
+        <div id="setList"></div>
+        <button class="btn btn-p" id="btnSetSave">حفظ الإعدادات</button>
+      </div>
+    </div>
+
+    <!-- ===== الإداريين ===== -->
+    <div id="tab-adm" class="tabpane hide">
+      <div class="card">
+        <h2>الإداريين والصلاحيات</h2>
+        <button class="btn btn-g" id="btnAdmNew">إضافة إداري</button>
+        <div class="scroll" id="admList"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ⚠️ نفس رابط الوسيط اللي في index.html
+const API = 'https://script.google.com/macros/s/AKfycbxASGDOzB6zEv5O-SRosE_7rHC0BfKfI_WusrMivt6W8bX2t3bDFDxzVWkRWx__DBw5/exec';
+
+const K = { tok:'v4_token', name:'v4_name' };
+const $ = id => document.getElementById(id);
+let S = { token:null, me:null, lists:{}, vols:[], events:[], permLabels:{} };
+
+const PERM_AR = {
+  scan:'مسح الحضور', manual:'تسجيل يدوي', events:'إدارة الفعاليات',
+  regForm:'فتح/قفل فورم التسجيل', editVolunteers:'تعديل بيانات المتطوعين',
+  toggleVolunteer:'تفعيل/تعطيل متطوع', reports:'مشاهدة التقارير',
+  export:'تصدير Excel', points:'تعديل قواعد النقاط', admins:'إدارة الإداريين'
+};
+
+const TABS = [
+  {id:'events', ar:'الفعاليات',      perm:'events'},
+  {id:'vols',   ar:'المتطوعين',      perm:null},
+  {id:'qr',     ar:'إرسال الأكواد',  perm:null},
+  {id:'rep',    ar:'التقارير',       perm:'reports'},
+  {id:'set',    ar:'الإعدادات',      perm:'points'},
+  {id:'adm',    ar:'الإداريين',      perm:'admins'}
+];
+
+/* ===== تنبيهات ===== */
+function toast(k, m, ms){
+  const el = document.createElement('div');
+  el.className = 'toast t-' + k; el.textContent = m;
+  $('toasts').appendChild(el);
+  setTimeout(() => { el.style.transition='opacity .3s'; el.style.opacity='0';
+                     setTimeout(()=>el.remove(),320); }, ms || (k==='bad'?5500:3200));
+}
+let mYes = null;
+function ask(title, bodyHtml, onYes, okLabel){
+  $('mTitle').textContent = title;
+  $('mBody').innerHTML = bodyHtml;
+  $('mYes').textContent = okLabel || 'تأكيد';
+  mYes = onYes; $('modal').classList.add('on');
+}
+$('mNo').onclick = () => { $('modal').classList.remove('on'); mYes=null; };
+$('mYes').onclick = () => { const f=mYes; mYes=null; $('modal').classList.remove('on'); if(f) f(); };
+
+/* ===== الاتصال ===== */
+async function call(p){
+  p.token = S.token;
+  const r = await fetch(API, {method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(p)});
+  const j = await r.json();
+  if(!j.ok && /الجلسة انتهت/.test(j.error||'')){
+    localStorage.removeItem(K.tok); location.reload();
+  }
+  return j;
+}
+const AR='٠١٢٣٤٥٦٧٨٩', FA='۰۱۲۳۴۵۶۷۸۹';
+function norm(s){ let o=''; for(const c of String(s==null?'':s)){
+  let i=AR.indexOf(c); if(i<0) i=FA.indexOf(c); o += i>=0?String(i):c; }
+  return o.toLowerCase().replace(/[\s\-_.]/g,''); }
+function esc(s){ return String(s==null?'':s).replace(/[<>&"]/g,c=>
+  ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+
+/* ===== الدخول ===== */
+$('btnLogin').onclick = async () => {
+  const name=$('inName').value.trim(), pin=norm($('inPin').value);
+  if(!name||!/^\d{4}$/.test(pin)) return toast('bad','اكتب اسمك وكود من ٤ أرقام');
+  $('btnLogin').disabled=true;
+  try{
+    const r = await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({action:'login',name,pin})}).then(x=>x.json());
+    if(!r.ok) return toast('bad', r.error);
+    localStorage.setItem(K.tok,r.data.token); localStorage.setItem(K.name,r.data.name);
+    S.token=r.data.token; await boot();
+  }catch(e){ toast('bad','مفيش اتصال'); }
+  finally{ $('btnLogin').disabled=false; }
+};
+$('inPin').addEventListener('keydown', e=>{ if(e.key==='Enter') $('btnLogin').click(); });
+$('btnOut').onclick = () => ask('تسجيل خروج','<p class="sub">هترجع لشاشة الدخول.</p>',()=>{
+  localStorage.removeItem(K.tok); location.reload(); });
+
+/* ===== التحميل ===== */
+async function boot(){
+  const r = await call({action:'bootstrap'});
+  if(!r.ok){ localStorage.removeItem(K.tok); return toast('bad', r.error); }
+  S.me = r.data.me;
+  $('loginView').classList.add('hide'); $('mainView').classList.remove('hide');
+  $('whoName').textContent = S.me.name;
+
+  buildTabs();
+  const L = await call({action:'lists'});
+  if(L.ok) S.lists = L.data;
+
+  fillSelect('evType', S.lists['أنواع الفعاليات'] || ['Rooted','Training','Event']);
+  const y = new Date().getFullYear();
+  fillSelect('repYear', [y+1,y,y-1,y-2].map(String));
+  $('repYear').value = String(y);
+  fillSelect('repMonth', ['يناير','فبراير','مارس','إبريل','مايو','يونيو','يوليو',
+    'أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'].map((m,i)=>({v:i+1,t:m})));
+  $('repMonth').value = String(new Date().getMonth()+1);
+
+  await Promise.all([loadEvents(), loadVols()]);
+}
+
+function fillSelect(id, arr){
+  $(id).innerHTML = arr.map(o => typeof o === 'object'
+    ? `<option value="${o.v}">${esc(o.t)}</option>`
+    : `<option value="${esc(o)}">${esc(o)}</option>`).join('');
+}
+
+function buildTabs(){
+  const vis = TABS.filter(t => !t.perm || S.me.perms[t.perm]);
+  $('tabs').innerHTML = vis.map((t,i) =>
+    `<button class="tab${i?'':' on'}" data-t="${t.id}">${t.ar}</button>`).join('');
+  document.querySelectorAll('.tabpane').forEach(p => p.classList.add('hide'));
+  if(vis.length) $('tab-'+vis[0].id).classList.remove('hide');
+  document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    document.querySelectorAll('.tabpane').forEach(p=>p.classList.add('hide'));
+    $('tab-'+b.dataset.t).classList.remove('hide');
+  });
+}
+
+/* ===== الفعاليات ===== */
+async function loadEvents(){
+  const r = await call({action:'events_list'});
+  if(!r.ok) return;
+  S.events = r.data.events;
+
+  $('evList').innerHTML = `<table><thead><tr><th>الاسم</th><th>النوع</th><th>التاريخ</th>
+    <th>اليوم</th><th>الحالة</th><th></th></tr></thead><tbody>` +
+    S.events.map(e => {
+      const cls = e.state==='مفتوحة دلوقتي'?'t-on':e.state==='مجدولة'?'t-mid':'t-off';
+      return `<tr><td>${esc(e.name)}</td><td>${esc(e.type)}</td><td>${e.dateStr}</td>
+        <td>${e.day}</td><td><span class="tag ${cls}">${e.state}</span></td>
+        <td><button class="btn btn-ghost btn-sm" data-ed="${e.row}">تعديل</button>
+            <button class="btn btn-r btn-sm" data-del="${e.row}">حذف</button></td></tr>`;
+    }).join('') + '</tbody></table>';
+
+  $('evList').querySelectorAll('[data-ed]').forEach(b =>
+    b.onclick = () => editEvent(S.events.find(e => e.row == b.dataset.ed)));
+  $('evList').querySelectorAll('[data-del]').forEach(b =>
+    b.onclick = () => delEvent(+b.dataset.del));
+
+  fillSelect('repEvent', S.events.map(e => ({v:e.id, t:e.name+' — '+e.dateStr})));
+}
+
+function editEvent(e){
+  if(!e) return;
+  $('evRow').value=e.row; $('evName').value=e.name; $('evType').value=e.type;
+  const p=e.dateStr.split('/'); $('evDate').value=`${p[2]}-${p[1]}-${p[0]}`;
+  $('evStart').value=fmtTime(e.startsAt); $('evEnd').value=fmtTime(e.endsAt);
+  $('evTitle').textContent='تعديل: '+e.name;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function fmtTime(ms){
+  const d=new Date(ms); let h=d.getHours(); const m=d.getMinutes();
+  const ap=h>=12?'PM':'AM'; h=h%12||12;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')} ${ap}`;
+}
+$('evNew').onclick = () => {
+  ['evRow','evName','evDate','evStart','evEnd'].forEach(i=>$(i).value='');
+  $('evTitle').textContent='فعالية جديدة';
+};
+$('evSave').onclick = async () => {
+  const p = {action:'event_save', row:$('evRow').value, name:$('evName').value.trim(),
+             type:$('evType').value, date:$('evDate').value,
+             start:$('evStart').value.trim().toUpperCase(),
+             end:$('evEnd').value.trim().toUpperCase()};
+  if(!p.name) return toast('bad','اكتب اسم الفعالية');
+  $('evSave').disabled=true;
+  const r = await call(p);
+  $('evSave').disabled=false;
+  if(!r.ok) return toast('bad', r.error);
+  toast('ok', r.data.msg); $('evNew').click(); loadEvents();
+};
+function delEvent(row){
+  const e = S.events.find(x=>x.row==row);
+  ask('حذف فعالية', `<p class="sub">هيتم حذف "<b>${esc(e.name)}</b>" نهائياً.<br>
+      لو عليها تسجيلات حضور، الحذف هيترفض.</p>`, async () => {
+    const r = await call({action:'event_delete', row});
+    r.ok ? (toast('ok',r.data.msg), loadEvents()) : toast('bad', r.error);
+  }, 'احذف');
+}
+
+/* ===== المتطوعين ===== */
+async function loadVols(){
+  const r = await call({action:'volunteers_list'});
+  if(!r.ok) return;
+  S.vols = r.data.volunteers;
+  S.vols.forEach(v => v._s = norm(v.name+v.code+v.phone));
+  renderVols(); renderQrList();
+}
+function renderVols(){
+  const q = norm($('vSearch').value), f = $('vFilter').value;
+  const rows = S.vols.filter(v => (!q||v._s.includes(q)) && (!f||v.status===f));
+  $('vCount').textContent = `ظاهر ${rows.length} من ${S.vols.length}`;
+  $('vList').innerHTML = `<table><thead><tr><th>الاسم</th><th>الكود</th><th>الموبايل</th>
+    <th>الفئة</th><th>الحالة</th><th></th></tr></thead><tbody>` +
+    rows.map(v => {
+      const cls = v.status==='Active'?'t-on':v.status==='Inactive'?'t-off':'t-mid';
+      return `<tr><td>${esc(v.name)}</td><td>${esc(v.code)}</td><td>${esc(v.phone)}</td>
+        <td>${esc(v.rank)}</td><td><span class="tag ${cls}">${esc(v.status)}</span></td>
+        <td><button class="btn btn-ghost btn-sm" data-v="${esc(v.code)}">تعديل</button></td></tr>`;
+    }).join('') + '</tbody></table>';
+  $('vList').querySelectorAll('[data-v]').forEach(b =>
+    b.onclick = () => editVol(S.vols.find(v=>v.code===b.dataset.v)));
+}
+$('vSearch').oninput = renderVols;
+$('vFilter').onchange = renderVols;
+
+function editVol(v){
+  if(!v) return;
+  const ranks = S.lists['فئات المتطوعين'] || [v.rank];
+  ask('تعديل ' + v.name, `
+    <label>الاسم</label><input id="edN" value="${esc(v.name)}">
+    <label>الموبايل</label><input id="edP" value="${esc(v.phone)}">
+    <label>الفئة</label><select id="edR">${ranks.map(r=>
+      `<option ${r===v.rank?'selected':''}>${esc(r)}</option>`).join('')}</select>
+    <label>الحالة</label><select id="edS">${['Active','Inactive','Blacklist'].map(s=>
+      `<option ${s===v.status?'selected':''}>${s}</option>`).join('')}</select>
+    <p class="note">الكود ${esc(v.code)} ثابت ومش بيتغير.</p>`, async () => {
+      const a = await call({action:'volunteer_save', code:v.code, name:$('edN').value,
+                            phone:$('edP').value, rank:$('edR').value});
+      if(!a.ok) return toast('bad', a.error);
+      const st = $('edS').value;
+      if(st !== v.status){
+        const b = await call({action:'volunteer_toggle', code:v.code, status:st});
+        if(!b.ok) return toast('bad', b.error);
+      }
+      toast('ok','اتحفظت البيانات'); loadVols();
+    }, 'حفظ');
+}
+
+/* ===== إرسال الأكواد ===== */
+$('qSearch').oninput = renderQrList;
+function renderQrList(){
+  const q = norm($('qSearch').value);
+  if(!q){ $('qList').innerHTML=''; return; }
+  const hits = S.vols.filter(v => v._s.includes(q)).slice(0,25);
+  $('qList').innerHTML = hits.length
+    ? `<table><tbody>` + hits.map(v =>
+        `<tr><td style="text-align:right">${esc(v.name)}<br>
+         <small style="color:#7a8590">${esc(v.code)} · ${esc(v.phone)}</small></td>
+         <td><button class="btn btn-g btn-sm" data-q="${esc(v.code)}">إرسال</button></td></tr>`
+      ).join('') + '</tbody></table>'
+    : '<p class="note" style="padding:12px">مفيش نتائج</p>';
+  $('qList').querySelectorAll('[data-q]').forEach(b => b.onclick = () => sendQr(b.dataset.q));
+}
+async function sendQr(code){
+  const r = await call({action:'qr_get', code});
+  if(!r.ok) return toast('bad', r.error);
+  const d = r.data;
+  if(!d.waLink) return toast('bad', d.waError + '\n' + d.name);
+  ask('إرسال الكود', `
+    <p style="text-align:center"><b>${esc(d.name)}</b><br>
+    <small class="sub">${esc(d.code)} · ${esc(d.phone)}</small></p>
+    <img src="${d.qr}" style="width:170px;display:block;margin:12px auto;border-radius:10px">
+    <p class="note">هيتفتح واتساب بالرسالة جاهزة.</p>`,
+    () => window.open(d.waLink, '_blank'), 'افتح واتساب');
+}
+$('btnFixWa').onclick = () => ask('إصلاح معادلات الواتساب',
+  '<p class="sub">هيتكتب معادلة صحيحة في عمود WP_Link لكل الصفوف. المعادلة دي بتسحب صح لأي متطوع جديد.</p>',
+  async () => {
+    const r = await call({action:'fix_wa_links'});
+    toast(r.ok?'ok':'bad', r.ok ? r.data.msg : r.error);
+  }, 'اصلح');
+
+/* ===== التقارير ===== */
+$('btnRank').onclick = async () => {
+  $('rankOut').innerHTML = '<p class="note" style="padding:14px">جاري الحساب...</p>';
+  const r = await call({action:'report_ranking', year:$('repYear').value});
+  if(!r.ok) return toast('bad', r.error);
+  $('repRange').textContent = `من ${r.data.from} إلى ${r.data.to}`;
+
+  let h = `<table><thead><tr><th>#</th><th>الاسم</th><th>Rooted</th><th>Training</th>
+           <th>Event</th><th>حضور</th><th>النقاط</th></tr></thead><tbody>`;
+  r.data.groups.forEach(g => {
+    h += `<tr><td colspan="7" class="grp">${esc(g.rank)} — ${g.rows.length} متطوع</td></tr>`;
+    g.rows.forEach(x => {
+      const m = x.pos===1?'🥇':x.pos===2?'🥈':x.pos===3?'🥉':x.pos;
+      h += `<tr><td>${m}</td><td style="text-align:right">${esc(x.name)}</td>
+            <td>${x.rooted}</td><td>${x.training}</td><td>${x.event}</td>
+            <td>${x.times}</td><td><b>${x.total}</b></td></tr>`;
+    });
+  });
+  $('rankOut').innerHTML = h + '</tbody></table>';
+};
+
+$('btnBd').onclick = async () => {
+  const r = await call({action:'report_birthdays', month:$('repMonth').value});
+  if(!r.ok) return toast('bad', r.error);
+  $('bdOut').innerHTML = r.data.rows.length
+    ? `<table><thead><tr><th>اليوم</th><th>الاسم</th><th>الفئة</th>
+       <th>التاريخ</th><th>العمر</th></tr></thead><tbody>` +
+      r.data.rows.map(x => `<tr><td><b>${x.day}</b></td>
+        <td style="text-align:right">${esc(x.name)}</td><td>${esc(x.rank)}</td>
+        <td>${x.date}</td><td>${x.age}</td></tr>`).join('') + '</tbody></table>'
+    : '<p class="note" style="padding:14px">مفيش أعياد ميلاد في الشهر ده</p>';
+};
+
+$('btnAbs').onclick = async () => {
+  const r = await call({action:'report_absence', eventId:$('repEvent').value});
+  if(!r.ok) return toast('bad', r.error);
+  const d = r.data;
+  let h = `<p class="note" style="padding:10px">${esc(d.event.name)} — ${d.event.date} ·
+           حضر <b>${d.present.length}</b> · غاب <b>${d.absent.length}</b></p>
+           <table><thead><tr><th>الاسم</th><th>الفئة</th><th>الحالة</th>
+           <th>الوقت</th><th>النقاط</th></tr></thead><tbody>`;
+  h += `<tr><td colspan="5" class="grp">الحاضرين (${d.present.length})</td></tr>`;
+  d.present.forEach(x => h += `<tr><td style="text-align:right">${esc(x.name)}</td>
+    <td>${esc(x.rank)}</td><td>${esc(x.state)}</td><td>${esc(x.time)}</td>
+    <td>${x.points}</td></tr>`);
+  h += `<tr><td colspan="5" class="grp">الغايبين (${d.absent.length})</td></tr>`;
+  d.absent.forEach(x => h += `<tr><td style="text-align:right">${esc(x.name)}</td>
+    <td>${esc(x.rank)}</td><td colspan="3"><span class="tag t-off">غايب</span></td></tr>`);
+  $('absOut').innerHTML = h + '</tbody></table>';
+};
+
+/* ===== الإعدادات ===== */
+async function loadSettings(){
+  const r = await call({action:'settings_get'});
+  if(!r.ok) return;
+  $('setList').innerHTML = r.data.items.map(i =>
+    `<label>${esc(i.key)}</label><input data-k="${esc(i.key)}" value="${esc(i.value)}">
+     <p class="note">${esc(i.note)}</p>`).join('');
+}
+$('btnSetSave').onclick = async () => {
+  const items = [...$('setList').querySelectorAll('[data-k]')]
+    .map(i => ({key:i.dataset.k, value:i.value}));
+  const r = await call({action:'settings_save', items});
+  toast(r.ok?'ok':'bad', r.ok ? r.data.msg : r.error);
+};
+
+/* ===== الإداريين ===== */
+async function loadAdmins(){
+  const r = await call({action:'admins_list'});
+  if(!r.ok) return;
+  $('admList').innerHTML = `<table><thead><tr><th>الاسم</th><th>الحالة</th>
+    <th>الصلاحيات</th><th></th></tr></thead><tbody>` +
+    r.data.admins.map(a => {
+      const on = Object.keys(a.perms).filter(k=>a.perms[k]).length;
+      return `<tr><td>${esc(a.name)}</td>
+        <td><span class="tag ${a.active?'t-on':'t-off'}">${a.active?'نشط':'موقوف'}</span></td>
+        <td>${on} من ${Object.keys(a.perms).length}</td>
+        <td><button class="btn btn-ghost btn-sm" data-a="${a.row}">تعديل</button></td></tr>`;
+    }).join('') + '</tbody></table>';
+  $('admList').querySelectorAll('[data-a]').forEach(b =>
+    b.onclick = () => admForm(r.data.admins.find(a => a.row == b.dataset.a)));
+}
+function admForm(a){
+  const p = a ? a.perms : {};
+  ask(a ? 'تعديل ' + a.name : 'إداري جديد', `
+    <label>الاسم</label><input id="adN" value="${a?esc(a.name):''}">
+    <label>الكود السري ${a?'(سيبه فاضي لو مش هتغيره)':'(٤ أرقام)'}</label>
+    <input id="adP" type="tel" maxlength="4" placeholder="••••">
+    <label>الحالة</label>
+    <select id="adA"><option value="1" ${!a||a.active?'selected':''}>نشط</option>
+    <option value="0" ${a&&!a.active?'selected':''}>موقوف</option></select>
+    <label>الصلاحيات</label>` +
+    Object.keys(PERM_AR).map(k =>
+      `<div class="perm"><input type="checkbox" id="pm_${k}" ${p[k]?'checked':''}>
+       <span>${PERM_AR[k]}</span></div>`).join(''),
+    async () => {
+      const perms = {};
+      Object.keys(PERM_AR).forEach(k => perms[k] = $('pm_'+k).checked);
+      const r = await call({action:'admin_save', row: a?a.row:0, name:$('adN').value.trim(),
+                            pin: norm($('adP').value), active: $('adA').value==='1', perms});
+      r.ok ? (toast('ok', r.data.msg), loadAdmins()) : toast('bad', r.error);
+    }, 'حفظ');
+}
+$('btnAdmNew').onclick = () => admForm(null);
+
+/* ===== تحميل التبويبات عند فتحها ===== */
+document.addEventListener('click', e => {
+  const b = e.target.closest('.tab'); if(!b) return;
+  if(b.dataset.t === 'set') loadSettings();
+  if(b.dataset.t === 'adm') loadAdmins();
+});
+
+/* ===== البداية ===== */
+(async () => {
+  const t = localStorage.getItem(K.tok);
+  if(t){ S.token = t; try{ await boot(); }catch(e){ localStorage.removeItem(K.tok); } }
+})();
+</script>
+</body>
+</html>
