@@ -48,6 +48,8 @@
   .tag{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
   .t-on{background:#e8f8ee;color:#1b6b3f}.t-off{background:#fdecea;color:#96271c}
   .t-mid{background:#fff8e6;color:#8a5a06}
+  .bar2{background:#eef1f5;border-radius:9px;padding:10px;text-align:center;
+        font-weight:700;font-size:13px;color:var(--dark);margin-top:10px}
   .hide{display:none!important}
   .note{font-size:12px;color:#8b95a1;margin-top:8px;line-height:1.6}
   .err{background:#fdecea;border:2px solid var(--red);color:#96271c;border-radius:10px;
@@ -181,9 +183,20 @@
     <!-- ===== إرسال الأكواد ===== -->
     <div id="tab-qr" class="tabpane hide">
       <div class="card">
-        <h2>إرسال كود على واتساب</h2>
-        <input id="qSearch" placeholder="اسم أو كود أو موبايل" autocomplete="off">
-        <div class="scroll" id="qList" style="max-height:300px"></div>
+        <h2>إرسال الأكواد على واتساب</h2>
+        <p class="sub">اضغط إرسال جنب أي اسم — واتساب هيفتح بالرسالة جاهزة،
+           والنظام هيعلّم إنه اتبعت.</p>
+
+        <div class="presets" style="margin-top:12px">
+          <button class="ps on" id="qf0">لسه ما اتبعتش</button>
+          <button class="ps" id="qf1">اتبعت</button>
+          <button class="ps" id="qf2">الكل</button>
+        </div>
+
+        <input id="qSearch" placeholder="ابحث بالاسم أو الكود (اختياري)" autocomplete="off">
+        <div class="bar2" id="qBar">جاري التحميل...</div>
+        <div class="scroll" id="qList" style="max-height:60vh"></div>
+        <div id="qErr" class="err hide"></div>
       </div>
       <div class="card">
         <h2>إصلاح عمود الواتساب في الشيت</h2>
@@ -474,6 +487,7 @@ function buildTabs(){
     if(b.dataset.t === 'set')   loadSettings();
     if(b.dataset.t === 'adm')   loadAdmins();
     if(b.dataset.t === 'brand') loadBranding();
+    if(b.dataset.t === 'qr')    loadQr();
   });
 }
 
@@ -557,7 +571,7 @@ async function loadVols(){
   if(!r.ok){ $('vList').innerHTML=''; return showErr('vErr', r.error); }
   S.vols = r.data.volunteers || [];
   S.vols.forEach(v => v._s = norm(v.name + v.code + v.phone));
-  renderVols(); renderQrList();
+  renderVols();
 }
 function visibleVols(){
   const q = norm($('vSearch').value), f = $('vFilter').value;
@@ -612,30 +626,86 @@ function editVol(v){
 }
 
 /* ===== إرسال الأكواد ===== */
-$('qSearch').oninput = renderQrList;
-function renderQrList(){
-  const q = norm($('qSearch').value);
-  if(!q){ $('qList').innerHTML=''; return; }
-  const hits = S.vols.filter(v => v._s.includes(q)).slice(0,25);
-  $('qList').innerHTML = hits.length
-    ? `<table><tbody>` + hits.map(v =>
-        `<tr><td style="text-align:right">${esc(v.name)}<br>
-         <small style="color:#7a8590">${esc(v.code)} · ${esc(v.phone)}</small></td>
-         <td><button class="btn btn-g btn-sm" data-q="${esc(v.code)}">إرسال</button></td></tr>`
-      ).join('') + '</tbody></table>'
-    : '<p class="note" style="padding:12px">مفيش نتائج</p>';
-  $('qList').querySelectorAll('[data-q]').forEach(b => b.onclick = () => sendQr(b.dataset.q));
+S.qr = []; S.qMode = 0;
+
+async function loadQr(){
+  hideErr('qErr');
+  $('qList').innerHTML = '<p class="note" style="padding:14px">جاري التحميل...</p>';
+  const r = await call({action:'qr_list'});
+  if(!r.ok){ $('qList').innerHTML=''; return showErr('qErr', r.error); }
+  S.qr = r.data.rows || [];
+  S.qr.forEach(v => v._s = norm(v.name + v.code + v.phone));
+  renderQr();
 }
-async function sendQr(code){
-  const r = await call({action:'qr_get', code});
-  if(!r.ok) return toast('bad', r.error);
-  const d = r.data;
-  if(!d.waLink) return toast('bad', d.waError + '\n' + d.name);
-  ask('إرسال الكود', `
-    <p style="text-align:center"><b>${esc(d.name)}</b><br>
-    <small class="sub">${esc(d.code)} · ${esc(d.phone)}</small></p>
-    <img src="${esc(d.qr)}" style="width:170px;display:block;margin:12px auto;border-radius:10px">`,
-    () => window.open(d.waLink, '_blank'), 'افتح واتساب');
+
+[0,1,2].forEach(i => $('qf'+i).onclick = () => {
+  S.qMode = i;
+  [0,1,2].forEach(j => $('qf'+j).classList.toggle('on', j===i));
+  renderQr();
+});
+$('qSearch').oninput = renderQr;
+
+function renderQr(){
+  const q = norm($('qSearch').value);
+  const rows = S.qr.filter(v => {
+    if(S.qMode === 0 && v.sent) return false;
+    if(S.qMode === 1 && !v.sent) return false;
+    return !q || v._s.includes(q);
+  });
+
+  const pend = S.qr.filter(v => !v.sent).length;
+  $('qBar').textContent = `فاضل ${pend} من ${S.qr.length} · ظاهر ${rows.length}`;
+
+  if(!rows.length){
+    $('qList').innerHTML = '<p class="note" style="padding:16px">مفيش أسماء هنا</p>';
+    return;
+  }
+
+  $('qList').innerHTML = `<table><thead><tr><th>الاسم</th><th>الكود</th>
+    <th>الموبايل</th><th>آخر إرسال</th><th></th></tr></thead><tbody>` +
+    rows.map(v => `<tr id="qr_${v.row}">
+      <td style="text-align:right">${esc(v.name)}<br>
+        <small style="color:#8b95a1">${esc(v.rank)}</small></td>
+      <td style="font-family:monospace">${esc(v.code)}</td>
+      <td>${esc(v.phone) || '<span class="tag t-off">مفيش رقم</span>'}</td>
+      <td class="qs">${v.sent ? '<span class="tag t-on">'+esc(v.sent)+'</span>'
+                              : '<span class="tag t-mid">لسه</span>'}</td>
+      <td>${v.wa
+        ? `<button class="btn btn-sm ${v.sent?'btn-a':'btn-g'}" data-s="${v.row}">
+             ${v.sent?'إعادة إرسال':'إرسال'}</button>`
+        : '<small style="color:#8b95a1">مينفعش</small>'}</td></tr>`).join('') +
+    '</tbody></table>';
+
+  $('qList').querySelectorAll('[data-s]').forEach(b =>
+    b.onclick = () => sendQr(+b.dataset.s, b));
+}
+
+async function sendQr(row, btn){
+  const v = S.qr.find(x => x.row === row);
+  if(!v || !v.wa) return;
+
+  const qr  = 'https://quickchart.io/qr?size=400&text=' + encodeURIComponent(v.code);
+  const msg = 'أهلاً يا ' + v.name + ' 👋\n' +
+              'كود الحضور الخاص بك: ' + v.code + '\n' +
+              'احفظ صورة الكود من هنا: ' + qr;
+
+  window.open('https://wa.me/' + v.wa + '?text=' + encodeURIComponent(msg), '_blank');
+
+  btn.disabled = true;
+  const r = await call({action:'qr_mark', row});
+  btn.disabled = false;
+  if(!r.ok) return showErr('qErr', r.error);
+
+  v.sent = r.data.sent;
+  const tr = $('qr_' + row);
+  if(tr){
+    tr.querySelector('.qs').innerHTML = '<span class="tag t-on">' + esc(v.sent) + '</span>';
+    btn.textContent = 'إعادة إرسال';
+    btn.className = 'btn btn-sm btn-a';
+  }
+  const pend = S.qr.filter(x => !x.sent).length;
+  $('qBar').textContent = `فاضل ${pend} من ${S.qr.length}`;
+  if(S.qMode === 0) setTimeout(renderQr, 900);
 }
 $('btnFixWa').onclick = () => ask('إصلاح معادلات الواتساب',
   `<p class="sub">عمود الكود (F) والـ QR (G) مش هيتلمسوا.
@@ -889,4 +959,3 @@ $('btnDiag').onclick = async () => {
 </script>
 </body>
 </html>
-
