@@ -15,7 +15,7 @@
         box-shadow:0 2px 10px rgba(0,0,0,.06)}
   h1{font-size:19px;color:var(--primary);margin-bottom:4px}
   h2{font-size:16px;color:var(--dark);margin-bottom:10px}
-  .sub{font-size:13px;color:#7a8590}
+  .sub{font-size:13px;color:#7a8590;line-height:1.7}
   label{display:block;font-size:13px;font-weight:600;margin:12px 0 6px;color:var(--dark)}
   input,select{width:100%;padding:12px;border:2px solid var(--line);
         border-radius:10px;font-size:15px;font-family:inherit;outline:none;background:#fff}
@@ -53,11 +53,31 @@
   .err{background:#fdecea;border:2px solid var(--red);color:#96271c;border-radius:10px;
        padding:13px;margin-top:10px;font-size:14px;font-weight:600;
        white-space:pre-line;line-height:1.6}
-  .perm{display:flex;align-items:center;gap:8px;padding:9px;border:1px solid var(--line);
-        border-radius:8px;margin-top:6px;font-size:13px}
-  .perm input{width:auto;flex:0}
   .diag{font-family:monospace;font-size:13px;line-height:2;padding:12px;
         background:#f7f9fc;border-radius:10px;margin-top:10px;white-space:pre-line}
+
+  /* الصلاحيات */
+  .presets{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px}
+  .ps{padding:8px 12px;border:2px solid var(--primary);background:#fff;color:var(--primary);
+      border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+  .ps:active{background:var(--primary);color:#fff}
+  .perm{display:flex;align-items:center;gap:10px;padding:11px;border:2px solid var(--line);
+        border-radius:10px;margin-top:7px;font-size:13.5px;cursor:pointer}
+  .perm.on{border-color:var(--green);background:#f4fdf7}
+  .perm input{width:20px;height:20px;flex:0;accent-color:var(--green)}
+  .perm b{font-weight:700;display:block}
+  .perm small{color:#8b95a1;font-size:11px}
+
+  /* اللوجوهات */
+  .logobox{border:2px dashed #c3ceda;border-radius:12px;padding:18px;text-align:center;
+           cursor:pointer;background:#fafcfe}
+  .logobox img{max-height:80px;max-width:100%;display:block;margin:0 auto 8px}
+  .logobox b{color:var(--primary);font-size:13px}
+  .preview{background:linear-gradient(160deg,#004e92,#00306b);border-radius:12px;
+           padding:18px;text-align:center;margin-top:12px}
+  .preview img{height:52px;margin:0 10px;vertical-align:middle}
+  .preview div{color:#fff;font-weight:800;margin-top:10px;font-size:15px}
+
   #toasts{position:fixed;top:12px;left:50%;transform:translateX(-50%);
           width:calc(100% - 28px);max-width:460px;z-index:9000;
           display:flex;flex-direction:column;gap:8px;pointer-events:none}
@@ -70,8 +90,8 @@
   #modal{position:fixed;inset:0;background:rgba(20,28,38,.55);z-index:9500;
          display:none;align-items:center;justify-content:center;padding:20px}
   #modal.on{display:flex}
-  .mbox{background:#fff;border-radius:16px;padding:22px;width:100%;max-width:400px;
-        max-height:85vh;overflow-y:auto}
+  .mbox{background:#fff;border-radius:16px;padding:22px;width:100%;max-width:420px;
+        max-height:88vh;overflow-y:auto}
   .mbox h2{text-align:center}
 </style>
 </head>
@@ -133,7 +153,10 @@
       </div>
       <div class="card">
         <h2>كل الفعاليات</h2>
-        <button class="btn btn-ghost btn-sm" onclick="loadEvents()">إعادة تحميل</button>
+        <div class="row">
+          <button class="btn btn-ghost btn-sm" onclick="loadEvents()">إعادة تحميل</button>
+          <button class="btn btn-g btn-sm hide" id="expEv">تصدير Excel</button>
+        </div>
         <div id="evErr" class="err hide"></div>
         <div class="scroll" id="evList"></div>
       </div>
@@ -148,6 +171,7 @@
             <option value="">الكل</option><option>Active</option>
             <option>Inactive</option><option>Blacklist</option></select></div>
         </div>
+        <button class="btn btn-g btn-sm hide" id="expVol">تصدير Excel</button>
         <div id="vErr" class="err hide"></div>
         <div class="scroll" id="vList"></div>
         <p class="note" id="vCount"></p>
@@ -164,7 +188,7 @@
       <div class="card">
         <h2>إصلاح عمود الواتساب في الشيت</h2>
         <p class="sub">بيكتب معادلة صحيحة في عمود WP_Link بس.
-           الكود (F) والـ QR (G) مش بيتلمسوا — الأكواد القديمة تفضل شغالة.</p>
+           الكود (F) والـ QR (G) مش بيتلمسوا.</p>
         <button class="btn btn-a" id="btnFixWa">اصلح المعادلات دلوقتي</button>
         <div id="waErr" class="err hide"></div>
       </div>
@@ -180,6 +204,7 @@
             <button class="btn btn-p" id="btnRank">عرض</button></div>
         </div>
         <p class="note" id="repRange"></p>
+        <button class="btn btn-g btn-sm hide" id="expRank">تصدير Excel</button>
         <div id="rankErr" class="err hide"></div>
         <div class="scroll" id="rankOut"></div>
       </div>
@@ -190,6 +215,7 @@
           <div style="display:flex;align-items:flex-end">
             <button class="btn btn-p" id="btnBd">عرض</button></div>
         </div>
+        <button class="btn btn-g btn-sm hide" id="expBd">تصدير Excel</button>
         <div id="bdErr" class="err hide"></div>
         <div class="scroll" id="bdOut"></div>
       </div>
@@ -200,8 +226,50 @@
           <div style="display:flex;align-items:flex-end">
             <button class="btn btn-p" id="btnAbs">عرض</button></div>
         </div>
+        <button class="btn btn-g btn-sm hide" id="expAbs">تصدير Excel</button>
         <div id="absErr" class="err hide"></div>
         <div class="scroll" id="absOut"></div>
+      </div>
+    </div>
+
+    <!-- ===== اللوجوهات ===== -->
+    <div id="tab-brand" class="tabpane hide">
+      <div class="card">
+        <h2>لوجوهات النظام</h2>
+        <p class="sub">بيظهروا في صفحة الكاميرا وفورم التسجيل.
+           الصورة بتتخزن جوه الشيت نفسه، فمش هتضيع لو موقع صور خارجي وقع.</p>
+
+        <div class="row" style="margin-top:14px">
+          <div>
+            <label>اللوجو اليمين</label>
+            <div class="logobox" id="boxL">
+              <img id="imgL" class="hide" alt="">
+              <b id="txtL">اضغط لاختيار صورة</b>
+            </div>
+            <input type="file" id="fileL" accept="image/*" class="hide">
+          </div>
+          <div>
+            <label>اللوجو الشمال</label>
+            <div class="logobox" id="boxR">
+              <img id="imgR" class="hide" alt="">
+              <b id="txtR">اضغط لاختيار صورة</b>
+            </div>
+            <input type="file" id="fileR" accept="image/*" class="hide">
+          </div>
+        </div>
+
+        <label>اسم الجهة (يظهر تحت اللوجوهات)</label>
+        <input id="orgTitle" placeholder="مثال: فريق المرشدي التطوعي">
+
+        <label>معاينة</label>
+        <div class="preview">
+          <img id="pvL" class="hide"><img id="pvR" class="hide">
+          <div id="pvT"></div>
+        </div>
+
+        <button class="btn btn-p" id="btnBrandSave">حفظ اللوجوهات</button>
+        <div id="brandErr" class="err hide"></div>
+        <p class="note">الصور بتتصغّر أوتوماتيك لـ 220 بكسل. PNG بخلفية شفافة أحسن شكل.</p>
       </div>
     </div>
 
@@ -220,7 +288,6 @@
     <div id="tab-adm" class="tabpane hide">
       <div class="card">
         <h2>الإداريين والصلاحيات</h2>
-        <p class="sub">اضغط تعديل عشان توقف إداري أو تزوّد وتشيل صلاحيات</p>
         <button class="btn btn-g" id="btnAdmNew">إضافة إداري</button>
         <div id="admErr" class="err hide"></div>
         <div class="scroll" id="admList"></div>
@@ -231,7 +298,6 @@
     <div id="tab-diag" class="tabpane hide">
       <div class="card">
         <h2>فحص النظام</h2>
-        <p class="sub">بيجرّب كل أمر على الوسيط ويقولك اللي ناقص</p>
         <button class="btn btn-p" id="btnDiag">ابدأ الفحص</button>
         <div class="diag" id="diagOut"></div>
       </div>
@@ -241,17 +307,33 @@
 </div>
 
 <script>
+// ⚠️ نفس رابط الوسيط اللي في index.html
 const API = 'https://script.google.com/macros/s/AKfycbxew0UDHiXeetZMJyhd6t7jiX3igZ6fviqqlLJUQjVPqBuJ7aPbLIjuzKZs7ZdDsPuf/exec';
 
 const K = { tok:'v4_token', name:'v4_name' };
 const $ = id => document.getElementById(id);
-let S = { token:null, me:null, lists:{}, vols:[], events:[] };
+let S = { token:null, me:null, lists:{}, vols:[], events:[],
+          rank:null, bd:null, abs:null, logoL:null, logoR:null };
 
 const PERM_AR = {
-  scan:'مسح الحضور', manual:'تسجيل يدوي', events:'إدارة الفعاليات',
-  regForm:'فتح/قفل فورم التسجيل', editVolunteers:'تعديل بيانات المتطوعين',
-  toggleVolunteer:'تفعيل/تعطيل متطوع', reports:'مشاهدة التقارير',
-  export:'تصدير Excel', points:'تعديل قواعد النقاط', admins:'إدارة الإداريين'
+  scan:            ['مسح الحضور',            'يفتح الكاميرا ويمسح الأكواد'],
+  manual:          ['تسجيل يدوي',            'يسجّل حضور بالاسم لو الكود مش راضي يتقري'],
+  events:          ['إدارة الفعاليات',       'يضيف ويعدّل ويحذف فعاليات'],
+  regForm:         ['فتح وقفل فورم التسجيل', 'يتحكم في تسجيل المتطوعين الجدد'],
+  editVolunteers:  ['تعديل بيانات المتطوعين','يغيّر الاسم والموبايل والفئة'],
+  toggleVolunteer: ['تفعيل وتعطيل متطوع',    'يوقف متطوع أو يرجّعه'],
+  reports:         ['مشاهدة التقارير',       'الترتيب وأعياد الميلاد والغياب'],
+  export:          ['تصدير Excel',           'ينزّل التقارير كملفات'],
+  points:          ['تعديل قواعد النقاط',    'يغيّر النقاط وحدود التأخير'],
+  admins:          ['إدارة الإداريين',       'يضيف إداريين ويغيّر صلاحياتهم واللوجوهات']
+};
+
+const PRESETS = {
+  'أدمن كامل':   Object.keys(PERM_AR),
+  'إداري فعاليات':['scan','manual','events','reports','export'],
+  'مسح بس':      ['scan','manual'],
+  'مشاهدة بس':   ['reports','export'],
+  'مفيش':        []
 };
 
 const TABS = [
@@ -259,12 +341,13 @@ const TABS = [
   {id:'vols',   ar:'المتطوعين',     perm:null},
   {id:'qr',     ar:'إرسال الأكواد', perm:null},
   {id:'rep',    ar:'التقارير',      perm:'reports'},
+  {id:'brand',  ar:'اللوجوهات',     perm:'admins'},
   {id:'set',    ar:'الإعدادات',     perm:'points'},
   {id:'adm',    ar:'الإداريين',     perm:'admins'},
   {id:'diag',   ar:'فحص النظام',    perm:null}
 ];
 
-/* ===== تنبيهات وأخطاء ===== */
+/* ===== تنبيهات ===== */
 function toast(k, m, ms){
   const el = document.createElement('div');
   el.className = 'toast t-' + k; el.textContent = m;
@@ -273,11 +356,8 @@ function toast(k, m, ms){
                      setTimeout(()=>el.remove(),320); }, ms || (k==='bad'?6000:3200));
 }
 function showErr(id, msg){
-  const el = $(id);
-  if(!el) return;
-  el.textContent = msg;
-  el.classList.remove('hide');
-  toast('bad', msg);
+  const el = $(id); if(!el) return;
+  el.textContent = msg; el.classList.remove('hide'); toast('bad', msg);
 }
 function hideErr(id){ const el=$(id); if(el) el.classList.add('hide'); }
 
@@ -299,12 +379,11 @@ async function call(p){
       headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(p)});
     const j = await r.json();
     if(!j.ok && /الجلسة انتهت/.test(j.error||'')){
-      localStorage.removeItem(K.tok);
-      setTimeout(()=>location.reload(), 1200);
+      localStorage.removeItem(K.tok); setTimeout(()=>location.reload(), 1200);
     }
     return j;
   }catch(e){
-    return { ok:false, error:'فشل الاتصال بالوسيط.\nاتأكد إن الرابط صح وإنك عملت Deploy.' };
+    return { ok:false, error:'فشل الاتصال بالوسيط.' };
   }
 }
 const AR='٠١٢٣٤٥٦٧٨٩', FA='۰۱۲۳۴۵۶۷۸۹';
@@ -313,6 +392,23 @@ function norm(s){ let o=''; for(const c of String(s==null?'':s)){
   return o.toLowerCase().replace(/[\s\-_.]/g,''); }
 function esc(s){ return String(s==null?'':s).replace(/[<>&"]/g,c=>
   ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+
+/* ===== تصدير Excel ===== */
+function csv(filename, rows){
+  if(!rows || !rows.length) return toast('warn','مفيش بيانات للتصدير');
+  const body = rows.map(r => r.map(c => {
+    const s = String(c == null ? '' : c);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }).join(',')).join('\r\n');
+
+  const blob = new Blob(['\uFEFF' + body], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename + '_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 3000);
+  toast('ok','اتنزّل الملف — افتحه بـ Excel');
+}
 
 /* ===== الدخول ===== */
 $('btnLogin').onclick = async () => {
@@ -340,10 +436,11 @@ async function boot(){
   $('whoName').textContent = S.me.name;
 
   buildTabs();
+  if(S.me.perms.export)
+    ['expEv','expVol','expRank','expBd','expAbs'].forEach(i=>$(i).classList.remove('hide'));
 
   const L = await call({action:'lists'});
   S.lists = L.ok ? L.data : {};
-  if(!L.ok) toast('warn', 'مقدرتش أجيب القوايم من شيت Source:\n' + L.error);
 
   fillSelect('evType', S.lists['أنواع الفعاليات'] || ['Rooted','Training','Event']);
   const y = new Date().getFullYear();
@@ -374,8 +471,9 @@ function buildTabs(){
     b.classList.add('on');
     document.querySelectorAll('.tabpane').forEach(p=>p.classList.add('hide'));
     $('tab-'+b.dataset.t).classList.remove('hide');
-    if(b.dataset.t === 'set') loadSettings();
-    if(b.dataset.t === 'adm') loadAdmins();
+    if(b.dataset.t === 'set')   loadSettings();
+    if(b.dataset.t === 'adm')   loadAdmins();
+    if(b.dataset.t === 'brand') loadBranding();
   });
 }
 
@@ -388,10 +486,9 @@ async function loadEvents(){
   S.events = r.data.events || [];
 
   if(!S.events.length){
-    $('evList').innerHTML = '<p class="note" style="padding:14px">مفيش فعاليات في الشيت</p>';
+    $('evList').innerHTML = '<p class="note" style="padding:14px">مفيش فعاليات</p>';
     return;
   }
-
   $('evList').innerHTML = `<table><thead><tr><th>الاسم</th><th>النوع</th><th>التاريخ</th>
     <th>اليوم</th><th>الحالة</th><th></th></tr></thead><tbody>` +
     S.events.map(e => {
@@ -410,6 +507,9 @@ async function loadEvents(){
 
   fillSelect('repEvent', S.events.map(e => ({v:e.id, t:e.name+' — '+e.dateStr})));
 }
+$('expEv').onclick = () => csv('الفعاليات',
+  [['الاسم','النوع','التاريخ','اليوم','الحالة']].concat(
+    S.events.map(e => [e.name, e.type, e.dateStr, e.day, e.state])));
 
 function editEvent(e){
   if(!e) return;
@@ -434,8 +534,7 @@ $('evSave').onclick = async () => {
              start:$('evStart').value.trim().toUpperCase(),
              end:$('evEnd').value.trim().toUpperCase()};
   if(!p.name) return showErr('evErr','اكتب اسم الفعالية');
-  hideErr('evErr');
-  $('evSave').disabled=true;
+  hideErr('evErr'); $('evSave').disabled=true;
   const r = await call(p);
   $('evSave').disabled=false;
   if(!r.ok) return showErr('evErr', r.error);
@@ -460,13 +559,15 @@ async function loadVols(){
   S.vols.forEach(v => v._s = norm(v.name + v.code + v.phone));
   renderVols(); renderQrList();
 }
-function renderVols(){
+function visibleVols(){
   const q = norm($('vSearch').value), f = $('vFilter').value;
-  const rows = S.vols.filter(v => (!q||v._s.includes(q)) && (!f||v.status===f));
+  return S.vols.filter(v => (!q||v._s.includes(q)) && (!f||v.status===f));
+}
+function renderVols(){
+  const rows = visibleVols();
   $('vCount').textContent = `ظاهر ${rows.length} من ${S.vols.length}`;
   if(!rows.length){
-    $('vList').innerHTML = '<p class="note" style="padding:14px">مفيش نتائج</p>';
-    return;
+    $('vList').innerHTML = '<p class="note" style="padding:14px">مفيش نتائج</p>'; return;
   }
   $('vList').innerHTML = `<table><thead><tr><th>الاسم</th><th>الكود</th><th>الموبايل</th>
     <th>الفئة</th><th>الحالة</th><th></th></tr></thead><tbody>` +
@@ -482,6 +583,10 @@ function renderVols(){
 }
 $('vSearch').oninput = renderVols;
 $('vFilter').onchange = renderVols;
+$('expVol').onclick = () => csv('المتطوعين',
+  [['الاسم','الكود','الموبايل','الرقم القومي','تاريخ الميلاد','العمر','الفئة','الحالة']]
+   .concat(visibleVols().map(v =>
+     [v.name, v.code, v.phone, v.nid, v.birth, v.age, v.rank, v.status])));
 
 function editVol(v){
   if(!v) return;
@@ -529,13 +634,12 @@ async function sendQr(code){
   ask('إرسال الكود', `
     <p style="text-align:center"><b>${esc(d.name)}</b><br>
     <small class="sub">${esc(d.code)} · ${esc(d.phone)}</small></p>
-    <img src="${esc(d.qr)}" style="width:170px;display:block;margin:12px auto;border-radius:10px">
-    <p class="note">هيتفتح واتساب بالرسالة جاهزة.</p>`,
+    <img src="${esc(d.qr)}" style="width:170px;display:block;margin:12px auto;border-radius:10px">`,
     () => window.open(d.waLink, '_blank'), 'افتح واتساب');
 }
 $('btnFixWa').onclick = () => ask('إصلاح معادلات الواتساب',
-  `<p class="sub">هيتكتب معادلة صحيحة في عمود WP_Link لكل الصفوف.<br><br>
-   <b>عمود الكود (F) والـ QR (G) مش هيتلمسوا.</b> أي كود مع أي حد دلوقتي هيفضل شغال.</p>`,
+  `<p class="sub">عمود الكود (F) والـ QR (G) مش هيتلمسوا.
+   أي كود مع أي حد دلوقتي هيفضل شغال.</p>`,
   async () => {
     hideErr('waErr');
     const r = await call({action:'fix_wa_links'});
@@ -548,6 +652,7 @@ $('btnRank').onclick = async () => {
   $('rankOut').innerHTML = '<p class="note" style="padding:14px">جاري الحساب...</p>';
   const r = await call({action:'report_ranking', year:$('repYear').value});
   if(!r.ok){ $('rankOut').innerHTML=''; return showErr('rankErr', r.error); }
+  S.rank = r.data;
   $('repRange').textContent = `من ${r.data.from} إلى ${r.data.to}`;
 
   let h = `<table><thead><tr><th>#</th><th>الاسم</th><th>Rooted</th><th>Training</th>
@@ -563,11 +668,19 @@ $('btnRank').onclick = async () => {
   });
   $('rankOut').innerHTML = h + '</tbody></table>';
 };
+$('expRank').onclick = () => {
+  if(!S.rank) return toast('warn','اضغط "عرض" الأول');
+  const rows = [['الفئة','المركز','الاسم','الكود','Rooted','Training','Event','عدد الحضور','النقاط']];
+  S.rank.groups.forEach(g => g.rows.forEach(x =>
+    rows.push([g.rank, x.pos, x.name, x.code, x.rooted, x.training, x.event, x.times, x.total])));
+  csv('الترتيب_' + S.rank.year, rows);
+};
 
 $('btnBd').onclick = async () => {
   hideErr('bdErr');
   const r = await call({action:'report_birthdays', month:$('repMonth').value});
   if(!r.ok){ $('bdOut').innerHTML=''; return showErr('bdErr', r.error); }
+  S.bd = r.data;
   $('bdOut').innerHTML = r.data.rows.length
     ? `<table><thead><tr><th>اليوم</th><th>الاسم</th><th>الفئة</th>
        <th>التاريخ</th><th>العمر</th></tr></thead><tbody>` +
@@ -576,11 +689,17 @@ $('btnBd').onclick = async () => {
         <td>${esc(x.date)}</td><td>${esc(x.age)}</td></tr>`).join('') + '</tbody></table>'
     : '<p class="note" style="padding:14px">مفيش أعياد ميلاد في الشهر ده</p>';
 };
+$('expBd').onclick = () => {
+  if(!S.bd) return toast('warn','اضغط "عرض" الأول');
+  csv('أعياد_الميلاد', [['اليوم','الاسم','الكود','الفئة','الموبايل','التاريخ','العمر']]
+    .concat(S.bd.rows.map(x => [x.day, x.name, x.code, x.rank, x.phone, x.date, x.age])));
+};
 
 $('btnAbs').onclick = async () => {
   hideErr('absErr');
   const r = await call({action:'report_absence', eventId:$('repEvent').value});
   if(!r.ok){ $('absOut').innerHTML=''; return showErr('absErr', r.error); }
+  S.abs = r.data;
   const d = r.data;
   let h = `<p class="note" style="padding:10px">${esc(d.event.name)} — ${esc(d.event.date)} ·
            حضر <b>${d.present.length}</b> · غاب <b>${d.absent.length}</b></p>
@@ -594,6 +713,64 @@ $('btnAbs').onclick = async () => {
   d.absent.forEach(x => h += `<tr><td style="text-align:right">${esc(x.name)}</td>
     <td>${esc(x.rank)}</td><td colspan="3"><span class="tag t-off">غايب</span></td></tr>`);
   $('absOut').innerHTML = h + '</tbody></table>';
+};
+$('expAbs').onclick = () => {
+  if(!S.abs) return toast('warn','اضغط "عرض" الأول');
+  const rows = [['الفعالية','التاريخ','النتيجة','الاسم','الكود','الفئة','الحالة','الوقت','النقاط']];
+  S.abs.present.forEach(x => rows.push([S.abs.event.name, S.abs.event.date, 'حاضر',
+    x.name, x.code, x.rank, x.state, x.time, x.points]));
+  S.abs.absent.forEach(x => rows.push([S.abs.event.name, S.abs.event.date, 'غايب',
+    x.name, x.code, x.rank, '', '', 0]));
+  csv('حضور_وغياب', rows);
+};
+
+/* ===== اللوجوهات ===== */
+async function loadBranding(){
+  hideErr('brandErr');
+  const r = await call({action:'branding'});
+  if(!r.ok) return showErr('brandErr', r.error);
+  if(r.data.left)  setLogo('L', r.data.left);
+  if(r.data.right) setLogo('R', r.data.right);
+  $('orgTitle').value = r.data.title || '';
+  $('pvT').textContent = r.data.title || '';
+}
+function setLogo(side, dataUri){
+  S['logo'+side] = dataUri;
+  $('img'+side).src = dataUri; $('img'+side).classList.remove('hide');
+  $('txt'+side).textContent = 'اضغط للتغيير';
+  $('pv'+side).src = dataUri; $('pv'+side).classList.remove('hide');
+}
+['L','R'].forEach(side => {
+  $('box'+side).onclick = () => $('file'+side).click();
+  $('file'+side).onchange = function(){
+    const f = this.files && this.files[0]; if(!f) return;
+    const img = new Image(), rd = new FileReader();
+    rd.onload = () => img.src = rd.result;
+    img.onload = () => {
+      const max = 220; let w = img.width, h = img.height;
+      if(w > max || h > max){ const k = max/Math.max(w,h); w = w*k|0; h = h*k|0; }
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(img, 0, 0, w, h);
+      const uri = cv.toDataURL('image/png');
+      if(uri.length > 47000) return showErr('brandErr','الصورة معقدة جداً — استخدم لوجو أبسط');
+      hideErr('brandErr');
+      setLogo(side, uri);
+    };
+    img.onerror = () => showErr('brandErr','الملف ده مش صورة');
+    rd.readAsDataURL(f);
+  };
+});
+$('orgTitle').oninput = function(){ $('pvT').textContent = this.value; };
+$('btnBrandSave').onclick = async () => {
+  hideErr('brandErr');
+  const p = {action:'branding_save', title:$('orgTitle').value.trim()};
+  if(S.logoL) p.left  = S.logoL;
+  if(S.logoR) p.right = S.logoR;
+  $('btnBrandSave').disabled = true;
+  const r = await call(p);
+  $('btnBrandSave').disabled = false;
+  r.ok ? toast('ok', r.data.msg + '\nهيظهر في كل الصفحات') : showErr('brandErr', r.error);
 };
 
 /* ===== الإعدادات ===== */
@@ -628,14 +805,22 @@ async function loadAdmins(){
   $('admList').innerHTML = `<table><thead><tr><th>الاسم</th><th>الحالة</th>
     <th>الصلاحيات</th><th></th></tr></thead><tbody>` +
     admins.map(a => {
-      const on = Object.keys(a.perms).filter(k=>a.perms[k]).length;
+      const on = Object.keys(a.perms).filter(k=>a.perms[k]);
+      const lbl = presetName(on);
       return `<tr><td style="text-align:right">${esc(a.name)}</td>
         <td><span class="tag ${a.active?'t-on':'t-off'}">${a.active?'نشط':'موقوف'}</span></td>
-        <td>${on} من ${Object.keys(a.perms).length}</td>
+        <td>${esc(lbl)}</td>
         <td><button class="btn btn-ghost btn-sm" data-a="${esc(a.row)}">تعديل</button></td></tr>`;
     }).join('') + '</tbody></table>';
   $('admList').querySelectorAll('[data-a]').forEach(b =>
     b.onclick = () => admForm(admins.find(a => String(a.row) === b.dataset.a)));
+}
+function presetName(on){
+  for(const k in PRESETS){
+    const p = PRESETS[k];
+    if(p.length === on.length && p.every(x => on.includes(x))) return k;
+  }
+  return on.length + ' صلاحية';
 }
 function admForm(a){
   const p = a ? a.perms : {};
@@ -646,10 +831,14 @@ function admForm(a){
     <label>الحالة</label>
     <select id="adA"><option value="1" ${!a||a.active?'selected':''}>نشط</option>
     <option value="0" ${a&&!a.active?'selected':''}>موقوف</option></select>
-    <label>الصلاحيات</label>` +
+    <label>اختيار سريع</label>
+    <div class="presets">${Object.keys(PRESETS).map(k =>
+      `<button type="button" class="ps" data-ps="${esc(k)}">${esc(k)}</button>`).join('')}</div>
+    <label>الصلاحيات بالتفصيل</label>` +
     Object.keys(PERM_AR).map(k =>
-      `<div class="perm"><input type="checkbox" id="pm_${k}" ${p[k]?'checked':''}>
-       <span>${PERM_AR[k]}</span></div>`).join(''),
+      `<label class="perm${p[k]?' on':''}" id="lb_${k}">
+         <input type="checkbox" id="pm_${k}" ${p[k]?'checked':''}>
+         <span><b>${PERM_AR[k][0]}</b><small>${PERM_AR[k][1]}</small></span></label>`).join(''),
     async () => {
       const perms = {};
       Object.keys(PERM_AR).forEach(k => perms[k] = $('pm_'+k).checked);
@@ -657,39 +846,38 @@ function admForm(a){
                             pin: norm($('adP').value), active: $('adA').value==='1', perms});
       r.ok ? (toast('ok', r.data.msg), loadAdmins()) : showErr('admErr', r.error);
     }, 'حفظ');
+
+  // ربط الأزرار السريعة والتلوين
+  Object.keys(PERM_AR).forEach(k => {
+    $('pm_'+k).onchange = () => $('lb_'+k).classList.toggle('on', $('pm_'+k).checked);
+  });
+  document.querySelectorAll('[data-ps]').forEach(b => b.onclick = () => {
+    const set = PRESETS[b.dataset.ps];
+    Object.keys(PERM_AR).forEach(k => {
+      const on = set.includes(k);
+      $('pm_'+k).checked = on;
+      $('lb_'+k).classList.toggle('on', on);
+    });
+    toast('ok', 'اتظبطت على: ' + b.dataset.ps);
+  });
 }
 $('btnAdmNew').onclick = () => admForm(null);
 
 /* ===== فحص النظام ===== */
 $('btnDiag').onclick = async () => {
-  const checks = [
-    ['bootstrap',        {}],
-    ['lists',            {}],
-    ['events_list',      {}],
-    ['volunteers_list',  {}],
-    ['qr_get',           {code:'__test__'}],
-    ['report_ranking',   {year:new Date().getFullYear()}],
-    ['report_birthdays', {month:1}],
-    ['report_absence',   {eventId:''}],
-    ['settings_get',     {}],
-    ['admins_list',      {}],
-    ['fix_wa_links',     {dryRun:true}]
-  ];
+  const checks = ['bootstrap','lists','events_list','volunteers_list','report_ranking',
+                  'report_birthdays','settings_get','admins_list','branding','reg_status'];
   $('diagOut').textContent = 'جاري الفحص...';
   let out = '', missing = 0;
-
-  for(const [act, extra] of checks){
-    if(act === 'fix_wa_links'){ out += `⏭️ ${act} — اتخطى (بيعدّل الشيت)\n`; continue; }
-    const r = await call(Object.assign({action:act}, extra));
+  for(const act of checks){
+    const r = await call({action:act, year:2026, month:1});
     if(r.ok) out += `✅ ${act}\n`;
-    else if(/أمر غير معروف/.test(r.error)){ out += `❌ ${act} — ناقص من Admin.gs\n`; missing++; }
+    else if(/أمر غير معروف/.test(r.error)){ out += `❌ ${act} — ناقص\n`; missing++; }
     else out += `⚠️ ${act} — ${r.error}\n`;
     $('diagOut').textContent = out;
   }
-
-  out += '\n' + (missing
-    ? `فيه ${missing} أمر ناقص.\nملف Admin.gs اتلزق ناقص — الصقه من الأول واعمل Deploy → New version.`
-    : 'كل الأوامر موجودة على الوسيط.');
+  out += '\n' + (missing ? `${missing} أمر ناقص — راجع ملفات .gs و Deploy → New version`
+                         : 'كل الأوامر موجودة.');
   $('diagOut').textContent = out;
 };
 
@@ -701,3 +889,4 @@ $('btnDiag').onclick = async () => {
 </script>
 </body>
 </html>
+
