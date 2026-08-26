@@ -274,6 +274,36 @@
       <div id="hOut"></div>
     </div>
 
+    <!-- ===== تقارير متقدمة ===== -->
+    <div id="tab-adv" class="tabpane hide">
+      <div class="card">
+        <h2>حضور كل شخص حسب نوع الفعالية</h2>
+        <p class="sub">الأعمدة بتتبني من شيت Event_Types — تضيف نوع، العمود يظهر لوحده.</p>
+        <div class="row">
+          <div><label>السنة</label><select id="advYear"></select></div>
+          <div><label>الفئة</label><select id="advRank"></select></div>
+          <div style="display:flex;align-items:flex-end">
+            <button class="btn btn-p" id="btnByType">عرض</button></div>
+        </div>
+        <button class="btn btn-g btn-sm hide" id="expByType">تصدير Excel</button>
+        <div id="advErr" class="err hide"></div>
+        <div class="scroll" id="byTypeOut"></div>
+      </div>
+
+      <div class="card">
+        <h2>ترتيب كل فئة</h2>
+        <p class="sub">كل فئة مرتبة من الأكتر حضوراً للأقل، مع إجمالي الفئة.</p>
+        <div class="row">
+          <div><label>السنة</label><select id="catYear"></select></div>
+          <div style="display:flex;align-items:flex-end">
+            <button class="btn btn-p" id="btnByCat">عرض</button></div>
+        </div>
+        <button class="btn btn-g btn-sm hide" id="expByCat">تصدير Excel</button>
+        <div id="catErr" class="err hide"></div>
+        <div class="scroll" id="byCatOut"></div>
+      </div>
+    </div>
+
     <!-- ===== اللوجوهات ===== -->
     <div id="tab-brand" class="tabpane hide">
       <div class="card">
@@ -384,6 +414,7 @@ const TABS = [
   {id:'qr',     ar:'إرسال الأكواد', perm:null},
   {id:'rep',    ar:'التقارير',      perm:'reports'},
   {id:'hist',   ar:'ملف المتطوع',   perm:'reports'},
+  {id:'adv',    ar:'تقارير متقدمة', perm:'reports'},
   {id:'brand',  ar:'اللوجوهات',     perm:'admins'},
   {id:'set',    ar:'الإعدادات',     perm:'points'},
   {id:'adm',    ar:'الإداريين',     perm:'admins'},
@@ -480,7 +511,7 @@ async function boot(){
 
   buildTabs();
   if(S.me.perms.export)
-    ['expEv','expVol','expRank','expBd','expAbs','expHist'].forEach(i=>$(i).classList.remove('hide'));
+    ['expEv','expVol','expRank','expBd','expAbs','expHist','expByType','expByCat'].forEach(i=>$(i).classList.remove('hide'));
 
   const L = await call({action:'lists'});
   S.lists = L.ok ? L.data : {};
@@ -519,6 +550,7 @@ function buildTabs(){
     if(b.dataset.t === 'brand') loadBranding();
     if(b.dataset.t === 'qr')    loadQr();
     if(b.dataset.t === 'hist')  renderHList();
+    if(b.dataset.t === 'adv')   initAdv();
   });
 }
 
@@ -955,6 +987,85 @@ $('expHist').onclick = () => {
   rows.push(['غياب — التاريخ','الفعالية','النوع']);
   S.hist.absences.forEach(a => rows.push([a.date,a.event,a.type]));
   csv('ملف_' + p.code, rows);
+};
+
+
+/* ===== تقارير متقدمة ===== */
+S.byType = null; S.byCat = null; S.advReady = false;
+
+function initAdv(){
+  if(S.advReady) return;
+  S.advReady = true;
+  const y = new Date().getFullYear();
+  const opts = [{v:'',t:'كل السنين'}].concat([y+1,y,y-1,y-2].map(x=>({v:x,t:x})));
+  fillSelect('advYear', opts); fillSelect('catYear', opts);
+  $('advYear').value = ''; $('catYear').value = '';
+  const ranks = S.lists['فئات المتطوعين'] ||
+    [...new Set(S.vols.map(v=>v.rank).filter(Boolean))];
+  fillSelect('advRank', [{v:'',t:'كل الفئات'}].concat(ranks.map(r=>({v:r,t:r}))));
+}
+
+function typeTable(types, rows, withPos){
+  let h = '<table><thead><tr>' + (withPos?'<th>#</th>':'') +
+    '<th>الاسم</th>' + types.map(t=>`<th>${esc(t)}</th>`).join('') +
+    '<th>الإجمالي</th><th>النقاط</th></tr></thead><tbody>';
+  rows.forEach(r => {
+    const m = withPos ? (r.pos===1?'🥇':r.pos===2?'🥈':r.pos===3?'🥉':r.pos) : '';
+    h += '<tr>' + (withPos?`<td>${m}</td>`:'') +
+      `<td style="text-align:right">${esc(r.name)}<br>
+       <small style="color:#8b95a1">${esc(r.code)}</small></td>` +
+      types.map(t=>`<td>${r.counts[t]||0}</td>`).join('') +
+      `<td><b>${r.total}</b></td><td><b>${r.points}</b></td></tr>`;
+  });
+  return h + '</tbody></table>';
+}
+
+$('btnByType').onclick = async () => {
+  hideErr('advErr');
+  $('byTypeOut').innerHTML = '<p class="note" style="padding:14px">جاري الحساب...</p>';
+  const p = {action:'report_by_type'};
+  if($('advYear').value) p.year = $('advYear').value;
+  if($('advRank').value) p.ranks = [$('advRank').value];
+  const r = await call(p);
+  if(!r.ok){ $('byTypeOut').innerHTML=''; return showErr('advErr', r.error); }
+  S.byType = r.data;
+  $('byTypeOut').innerHTML =
+    `<p class="note" style="padding:9px">${esc(r.data.year)} ${esc(r.data.range)} ·
+     ${r.data.rows.length} شخص</p>` + typeTable(r.data.types, r.data.rows, false);
+};
+$('expByType').onclick = () => {
+  if(!S.byType) return toast('warn','اضغط "عرض" الأول');
+  const t = S.byType.types;
+  csv('حضور_حسب_النوع', [['الاسم','الكود','الفئة','الحالة'].concat(t).concat(['الإجمالي','النقاط'])]
+    .concat(S.byType.rows.map(r => [r.name,r.code,r.rank,r.status]
+      .concat(t.map(x=>r.counts[x]||0)).concat([r.total,r.points]))));
+};
+
+$('btnByCat').onclick = async () => {
+  hideErr('catErr');
+  $('byCatOut').innerHTML = '<p class="note" style="padding:14px">جاري الحساب...</p>';
+  const p = {action:'report_by_category'};
+  if($('catYear').value) p.year = $('catYear').value;
+  const r = await call(p);
+  if(!r.ok){ $('byCatOut').innerHTML=''; return showErr('catErr', r.error); }
+  S.byCat = r.data;
+  const t = r.data.types;
+  let h = `<p class="note" style="padding:9px">${esc(r.data.year)} ${esc(r.data.range)}</p>`;
+  r.data.groups.forEach(g => {
+    h += `<div class="grp">${esc(g.rank)} — ${g.count} شخص ·
+          إجمالي ${g.sum.total} حضور · ${g.sum.points} نقطة</div>`;
+    h += typeTable(t, g.rows, true);
+  });
+  $('byCatOut').innerHTML = h;
+};
+$('expByCat').onclick = () => {
+  if(!S.byCat) return toast('warn','اضغط "عرض" الأول');
+  const t = S.byCat.types;
+  const rows = [['الفئة','المركز','الاسم','الكود'].concat(t).concat(['الإجمالي','النقاط'])];
+  S.byCat.groups.forEach(g => g.rows.forEach(r =>
+    rows.push([g.rank, r.pos, r.name, r.code]
+      .concat(t.map(x=>r.counts[x]||0)).concat([r.total, r.points]))));
+  csv('ترتيب_الفئات', rows);
 };
 
 /* ===== اللوجوهات ===== */
